@@ -49,7 +49,6 @@ const versesContainer = document.getElementById("verses");
 const statusEl = document.getElementById("status");
 const translationNoteEl = document.getElementById("translation-note");
 const player = document.getElementById("audio-player");
-const debugAudioLink = document.getElementById("debug-audio-link");
 const masterPlayButton = document.getElementById("play-surah-btn");
 
 let translationEdition = null;
@@ -121,7 +120,6 @@ function playAtIndex(index) {
 
   currentIndex = index;
   player.src = entry.url;
-  debugAudioLink.href = entry.url;
   setPlayingState(entry.button, true);
   setPlayingState(masterPlayButton, true);
   player.play().catch(() => {
