@@ -13,7 +13,8 @@ const player = document.getElementById("audio-player");
 const debugAudioLink = document.getElementById("debug-audio-link");
 
 let translationEdition = null;
-let currentPlayButton = null;
+let verseQueue = [];
+let currentIndex = -1;
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
@@ -33,34 +34,50 @@ function setButtonPlaying(button, playing) {
 
 function stopAudio() {
   player.pause();
-  if (currentPlayButton) {
-    setButtonPlaying(currentPlayButton, false);
-    currentPlayButton = null;
+  if (currentIndex >= 0 && verseQueue[currentIndex]) {
+    setButtonPlaying(verseQueue[currentIndex].button, false);
   }
+  currentIndex = -1;
 }
 
-function toggleAudio(button, url) {
-  if (currentPlayButton === button) {
+function playAtIndex(index) {
+  if (index < 0 || index >= verseQueue.length) {
     stopAudio();
     return;
   }
-  stopAudio();
-  if (!url) {
-    setStatus("Ingen lyd tilgængelig for dette vers.", true);
+
+  const entry = verseQueue[index];
+  if (!entry.url) {
+    playAtIndex(index + 1); // spring vers uden lyd over
     return;
   }
-  player.src = url;
-  debugAudioLink.href = url;
+
+  if (currentIndex >= 0 && currentIndex !== index && verseQueue[currentIndex]) {
+    setButtonPlaying(verseQueue[currentIndex].button, false);
+  }
+
+  currentIndex = index;
+  player.src = entry.url;
+  debugAudioLink.href = entry.url;
+  setButtonPlaying(entry.button, true);
   player.play().catch(() => {
     setStatus("Kunne ikke afspille lyden. Tjek din internetforbindelse.", true);
   });
-  currentPlayButton = button;
-  setButtonPlaying(button, true);
 }
 
-player.addEventListener("ended", stopAudio);
+function toggleAudio(index) {
+  if (currentIndex === index) {
+    stopAudio();
+    return;
+  }
+  playAtIndex(index);
+}
+
+player.addEventListener("ended", () => {
+  playAtIndex(currentIndex + 1);
+});
 player.addEventListener("error", () => {
-  if (currentPlayButton) {
+  if (currentIndex >= 0) {
     setStatus("Kunne ikke afspille lyden for dette vers.", true);
   }
   stopAudio();
@@ -89,6 +106,8 @@ async function resolveTranslationEdition() {
 
 function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
   versesContainer.innerHTML = "";
+  verseQueue = [];
+
   arabicAyahs.forEach((ayah, index) => {
     const row = document.createElement("div");
     row.className = "verse";
@@ -103,13 +122,14 @@ function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
     const playButton = document.createElement("button");
     playButton.className = "verse-play";
     playButton.type = "button";
-    playButton.setAttribute("aria-label", `Afspil vers ${ayah.numberInSurah}`);
+    playButton.setAttribute("aria-label", `Afspil fra vers ${ayah.numberInSurah}`);
     playButton.innerHTML = `
       <svg class="icon-play" viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
       <svg class="icon-pause is-hidden" viewBox="0 0 24 24" width="14" height="14"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
     `;
     const audioUrl = audioAyahs[index]?.audio;
-    playButton.addEventListener("click", () => toggleAudio(playButton, audioUrl));
+    verseQueue.push({ button: playButton, url: audioUrl });
+    playButton.addEventListener("click", () => toggleAudio(index));
 
     side.appendChild(num);
     side.appendChild(playButton);
