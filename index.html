@@ -17,62 +17,76 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="app-bar">
+    <h1 class="app-title">Koran App</h1>
+    <button type="button" id="search-toggle-btn" class="icon-btn" aria-label="Søg">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+    </button>
+  </div>
+
+  <div class="search-panel" id="search-panel" hidden>
+    <form id="search-form" class="search-form">
+      <input
+        type="search"
+        id="search-input"
+        class="search-input"
+        placeholder="Søg i oversættelsen …"
+        aria-label="Søgeord"
+      />
+      <button type="submit" class="search-button">Søg</button>
+    </form>
+    <div class="search-results" id="search-results" hidden></div>
+  </div>
+
+  <p class="status" id="status" role="status" hidden></p>
+
+  <div class="tab-bar" id="tab-bar" role="tablist">
+    <button type="button" class="tab-btn is-active" data-tab="surahs" role="tab" aria-selected="true">Suraer</button>
+    <button type="button" class="tab-btn" data-tab="bookmarks" role="tab" aria-selected="false" id="bookmarks-tab-btn">Bogmærker</button>
+  </div>
+
   <main class="wrap">
-    <header class="hero">
-      <p class="eyebrow">Eksperiment · QuranHub</p>
-      <label class="select-label" for="sura-select">Vælg sura</label>
-      <select id="sura-select" class="sura-select" aria-label="Vælg sura"></select>
-      <h1 class="sura-name-ar" id="sura-name-ar" dir="rtl"></h1>
-      <p class="sura-name-da" id="sura-name-en"></p>
-
-      <div class="settings-row">
-        <div class="settings-field">
-          <label class="select-label" for="translation-select">Oversættelse</label>
-          <select id="translation-select" class="sura-select" aria-label="Vælg oversættelse"></select>
-        </div>
-        <div class="settings-field">
-          <label class="select-label" for="reciter-select">Reciter</label>
-          <select id="reciter-select" class="sura-select" aria-label="Vælg reciter"></select>
-        </div>
-      </div>
-    </header>
-
-    <div class="mode-toggle" role="radiogroup" aria-label="Visningstype">
-      <button type="button" class="mode-btn" data-mode="arabic">Arabisk</button>
-      <button type="button" class="mode-btn" data-mode="english">Engelsk</button>
-      <button type="button" class="mode-btn is-active" data-mode="both">Begge</button>
+    <div class="list-view" id="list-view">
+      <div class="surah-list" id="surah-list" role="tabpanel"></div>
+      <div class="bookmarks-list" id="bookmarks-list" role="tabpanel" hidden></div>
     </div>
 
-    <div class="toolbar-row">
+    <div class="reading-view" id="reading-view" hidden>
+      <button type="button" id="back-btn" class="back-btn">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M15.5 4.5 8 12l7.5 7.5 1.4-1.4L10.8 12l6.1-6.1z"/></svg>
+        Suraer
+      </button>
+
+      <header class="hero">
+        <h2 class="sura-name-ar" id="sura-name-ar" dir="rtl"></h2>
+        <p class="sura-name-da" id="sura-name-en"></p>
+
+        <div class="settings-row">
+          <div class="settings-field">
+            <label class="select-label" for="translation-select">Oversættelse</label>
+            <select id="translation-select" class="sura-select" aria-label="Vælg oversættelse"></select>
+          </div>
+          <div class="settings-field">
+            <label class="select-label" for="reciter-select">Reciter</label>
+            <select id="reciter-select" class="sura-select" aria-label="Vælg reciter"></select>
+          </div>
+        </div>
+      </header>
+
+      <div class="mode-toggle" role="radiogroup" aria-label="Visningstype">
+        <button type="button" class="mode-btn" data-mode="arabic">Arabisk</button>
+        <button type="button" class="mode-btn" data-mode="english">Engelsk</button>
+        <button type="button" class="mode-btn is-active" data-mode="both">Begge</button>
+      </div>
+
       <button type="button" id="play-surah-btn" class="play-surah-btn">
         <svg class="icon-play" viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
         <svg class="icon-pause is-hidden" viewBox="0 0 24 24" width="16" height="16"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
         <span>Afspil hele suraen</span>
       </button>
 
-      <button type="button" id="bookmarks-toggle-btn" class="bookmarks-toggle-btn">
-        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 2h12a1 1 0 0 1 1 1v19l-7-4-7 4V3a1 1 0 0 1 1-1z"/></svg>
-        <span id="bookmarks-label">Bogmærker (0)</span>
-      </button>
+      <section class="verses" id="verses" aria-label="Vers fra den valgte sura"></section>
     </div>
-
-    <div class="search-results bookmarks-panel" id="bookmarks-panel" hidden></div>
-
-    <form id="search-form" class="search-form">
-      <input
-        type="search"
-        id="search-input"
-        class="search-input"
-        placeholder="Søg i oversættelsen (lige nu engelsk), fx “mercy”"
-        aria-label="Søgeord"
-      />
-      <button type="submit" class="search-button">Søg</button>
-    </form>
-    <div class="search-results" id="search-results" hidden></div>
-
-    <p class="status" id="status" role="status" hidden></p>
-
-    <section class="verses" id="verses" aria-label="Vers fra den valgte sura"></section>
   </main>
 
   <audio id="audio-player"></audio>

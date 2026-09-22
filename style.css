@@ -41,21 +41,183 @@ body {
 .wrap {
   max-width: 720px;
   margin: 0 auto;
-  padding: 48px 20px 80px;
+  padding: 16px 20px 80px;
+}
+
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.app-title {
+  font-family: "Amiri", Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.icon-btn:hover {
+  background: var(--emerald-soft);
+}
+
+.icon-btn svg {
+  fill: currentColor;
+}
+
+.search-panel {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 20px 0;
+}
+
+.tab-bar {
+  position: sticky;
+  top: 71px;
+  z-index: 19;
+  display: flex;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.tab-btn {
+  flex: 1 1 0;
+  font-family: "Karla", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 14px 8px;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn.is-active {
+  color: var(--emerald);
+  border-bottom-color: var(--emerald);
+}
+
+.surah-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.surah-list[hidden],
+.bookmarks-list[hidden],
+.list-view[hidden],
+.reading-view[hidden],
+.tab-bar[hidden],
+.search-panel[hidden] {
+  display: none;
+}
+
+.surah-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 4px;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font-family: "Karla", sans-serif;
+}
+
+.surah-row:hover {
+  background: var(--emerald-soft);
+}
+
+.surah-row.is-last-read {
+  background: var(--gold-soft);
+}
+
+.surah-row.is-last-read .surah-row-number {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.surah-row-number {
+  flex: 0 0 auto;
+  width: 34px;
+  text-align: center;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.surah-row-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.surah-row-name {
+  display: block;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.surah-row-name .surah-row-name-ar {
+  font-family: "Amiri", Georgia, serif;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+.surah-row-meta {
+  display: block;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Karla", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--emerald);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-bottom: 20px;
+}
+
+.back-btn svg {
+  fill: currentColor;
 }
 
 .hero {
   text-align: center;
-  margin-bottom: 40px;
-}
-
-.eyebrow {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--emerald);
-  margin: 0 0 14px;
+  margin-bottom: 24px;
 }
 
 .sura-name-ar {
@@ -250,21 +412,12 @@ body {
   color: var(--paper);
 }
 
-.toolbar-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 24px;
-}
-
 .play-surah-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin: 0;
+  margin: 0 auto 24px;
   font-family: "Karla", sans-serif;
   font-size: 14px;
   font-weight: 600;
@@ -291,29 +444,6 @@ body {
 
 .play-surah-btn svg.is-hidden {
   display: none;
-}
-
-.bookmarks-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: "Karla", sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 999px;
-  border: 1px solid var(--gold);
-  background: transparent;
-  color: var(--gold);
-  cursor: pointer;
-}
-
-.bookmarks-toggle-btn:hover {
-  background: var(--gold-soft);
-}
-
-.bookmarks-toggle-btn svg {
-  fill: currentColor;
 }
 
 .bookmark-item {
@@ -484,11 +614,13 @@ body {
   opacity: 0.9;
 }
 
-.search-results {
+.search-results,
+.bookmarks-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-bottom: 28px;
+  padding-top: 16px;
 }
 
 .search-count {
@@ -569,7 +701,7 @@ body {
 
 @media (max-width: 480px) {
   .wrap {
-    padding: 36px 16px 60px;
+    padding: 12px 16px 60px;
   }
 
   .verse {
@@ -581,12 +713,7 @@ body {
     padding: 18px 16px;
   }
 
-  .toolbar-row {
-    gap: 8px;
-  }
-
-  .play-surah-btn,
-  .bookmarks-toggle-btn {
+  .play-surah-btn {
     padding: 9px 16px;
     font-size: 13px;
   }

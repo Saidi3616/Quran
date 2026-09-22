@@ -40,11 +40,22 @@ function persistBookmarks() {
 
 function getLastSurah() {
   const raw = safeGetItem(LAST_SURAH_KEY);
+  if (!raw) return null;
   const number = parseInt(raw, 10);
-  return number >= 1 && number <= 114 ? number : 1;
+  return number >= 1 && number <= 114 ? number : null;
 }
 
-const select = document.getElementById("sura-select");
+// --- DOM referencer ---
+const searchToggleBtn = document.getElementById("search-toggle-btn");
+const searchPanelEl = document.getElementById("search-panel");
+const tabBarEl = document.getElementById("tab-bar");
+const bookmarksTabBtn = document.getElementById("bookmarks-tab-btn");
+const listViewEl = document.getElementById("list-view");
+const surahListEl = document.getElementById("surah-list");
+const bookmarksListEl = document.getElementById("bookmarks-list");
+const readingViewEl = document.getElementById("reading-view");
+const backBtn = document.getElementById("back-btn");
+
 const translationSelect = document.getElementById("translation-select");
 const reciterSelect = document.getElementById("reciter-select");
 const suraNameAr = document.getElementById("sura-name-ar");
@@ -69,6 +80,10 @@ let currentTranslationAyahs = [];
 let currentAudioAyahs = [];
 let currentSurahNumber = null;
 let currentSurahEnglishName = "";
+
+let allSurahs = [];
+let currentView = "list"; // "list" | "reading"
+let currentTab = "surahs"; // "surahs" | "bookmarks"
 
 let bookmarks = loadBookmarks();
 
@@ -388,10 +403,6 @@ masterPlayButton.addEventListener("click", () => {
   }
 });
 
-const bookmarksToggleBtn = document.getElementById("bookmarks-toggle-btn");
-const bookmarksLabelEl = document.getElementById("bookmarks-label");
-const bookmarksPanelEl = document.getElementById("bookmarks-panel");
-
 function isBookmarked(surah, ayah) {
   return bookmarks.some((b) => b.surah === surah && b.ayah === ayah);
 }
@@ -414,20 +425,22 @@ function toggleBookmark(entry, button) {
 
   persistBookmarks();
   setBookmarkButtonState(button, nowBookmarked);
-  renderBookmarksPanel();
+  updateBookmarksTabLabel();
+  if (currentTab === "bookmarks") renderBookmarksList();
 }
 
-function renderBookmarksPanel() {
-  bookmarksLabelEl.textContent = `Bogmærker (${bookmarks.length})`;
-  if (bookmarksPanelEl.hidden) return;
+function updateBookmarksTabLabel() {
+  bookmarksTabBtn.textContent = `Bogmærker (${bookmarks.length})`;
+}
 
-  bookmarksPanelEl.innerHTML = "";
+function renderBookmarksList() {
+  bookmarksListEl.innerHTML = "";
 
   if (bookmarks.length === 0) {
     const empty = document.createElement("p");
     empty.className = "search-empty";
     empty.textContent = "Du har ingen bogmærker endnu. Tryk på bogmærke-ikonet ved et vers for at gemme det.";
-    bookmarksPanelEl.appendChild(empty);
+    bookmarksListEl.appendChild(empty);
     return;
   }
 
@@ -449,10 +462,7 @@ function renderBookmarksPanel() {
 
     openBtn.appendChild(meta);
     openBtn.appendChild(snippet);
-    openBtn.addEventListener("click", () => {
-      bookmarksPanelEl.hidden = true;
-      goToVerse(bookmark.surah, bookmark.ayah);
-    });
+    openBtn.addEventListener("click", () => goToVerse(bookmark.surah, bookmark.ayah));
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
@@ -463,7 +473,8 @@ function renderBookmarksPanel() {
       event.stopPropagation();
       bookmarks = bookmarks.filter((b) => !(b.surah === bookmark.surah && b.ayah === bookmark.ayah));
       persistBookmarks();
-      renderBookmarksPanel();
+      updateBookmarksTabLabel();
+      renderBookmarksList();
       if (currentSurahNumber === bookmark.surah) {
         stopAudio();
         renderCurrentView();
@@ -472,24 +483,53 @@ function renderBookmarksPanel() {
 
     item.appendChild(openBtn);
     item.appendChild(removeBtn);
-    bookmarksPanelEl.appendChild(item);
+    bookmarksListEl.appendChild(item);
   });
 }
 
-bookmarksToggleBtn.addEventListener("click", () => {
-  if (bookmarksPanelEl.hidden) {
-    clearSearchResults();
-    bookmarksPanelEl.hidden = false;
-    renderBookmarksPanel();
-  } else {
-    bookmarksPanelEl.hidden = true;
-  }
+// --- Visninger: liste vs. læsning ---
+function showListView() {
+  currentView = "list";
+  stopAudio();
+  listViewEl.hidden = false;
+  tabBarEl.hidden = false;
+  readingViewEl.hidden = true;
+}
+
+function showReadingView() {
+  currentView = "reading";
+  listViewEl.hidden = true;
+  tabBarEl.hidden = true;
+  readingViewEl.hidden = false;
+}
+
+backBtn.addEventListener("click", showListView);
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    const active = btn.dataset.tab === tab;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-selected", String(active));
+  });
+  surahListEl.hidden = tab !== "surahs";
+  bookmarksListEl.hidden = tab !== "bookmarks";
+  if (tab === "bookmarks") renderBookmarksList();
+}
+
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => setTab(btn.dataset.tab));
 });
+
+async function openSurah(number) {
+  hideSearchPanel();
+  showReadingView();
+  await loadSurah(number);
+}
 
 async function loadSurah(number) {
   stopAudio();
   preloadedAudio.clear();
-  select.disabled = true;
   versesContainer.innerHTML = "";
   setStatus("Henter vers …");
 
@@ -513,9 +553,55 @@ async function loadSurah(number) {
     setStatus("");
   } catch (err) {
     setStatus("Kunne ikke hente suraen. Tjek din internetforbindelse og prøv igen.", true);
-  } finally {
-    select.disabled = false;
   }
+}
+
+function renderSurahList() {
+  surahListEl.innerHTML = "";
+  const lastSurah = getLastSurah();
+
+  allSurahs.forEach((surah) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "surah-row";
+    if (surah.number === lastSurah) {
+      row.classList.add("is-last-read");
+    }
+
+    const number = document.createElement("span");
+    number.className = "surah-row-number";
+    number.textContent = surah.number;
+
+    const info = document.createElement("span");
+    info.className = "surah-row-info";
+
+    const name = document.createElement("span");
+    name.className = "surah-row-name";
+    name.textContent = surah.englishName;
+    const nameAr = document.createElement("span");
+    nameAr.className = "surah-row-name-ar";
+    nameAr.dir = "rtl";
+    nameAr.textContent = surah.name;
+    name.appendChild(nameAr);
+
+    const meta = document.createElement("span");
+    meta.className = "surah-row-meta";
+    const revelation = surah.revelationType || "";
+    const ayahCount = surah.numberOfAyahs != null ? `${surah.numberOfAyahs} vers` : "";
+    meta.textContent = [revelation, ayahCount].filter(Boolean).join(" · ");
+
+    info.appendChild(name);
+    info.appendChild(meta);
+
+    row.appendChild(number);
+    row.appendChild(info);
+    row.addEventListener("click", () => openSurah(surah.number));
+
+    surahListEl.appendChild(row);
+  });
+
+  const lastRow = surahListEl.querySelector(".is-last-read");
+  if (lastRow) lastRow.scrollIntoView({ block: "center" });
 }
 
 async function loadSurahList() {
@@ -526,40 +612,26 @@ async function loadSurahList() {
     if (!response.ok) throw new Error(`Status ${response.status}`);
     const json = await response.json();
 
-    json.data.forEach((surah) => {
-      const option = document.createElement("option");
-      option.value = surah.number;
-      option.textContent = `${surah.number}. ${surah.englishName} — ${surah.name}`;
-      select.appendChild(option);
-    });
-
+    allSurahs = json.data;
+    renderSurahList();
     setStatus("");
-    const startSurah = getLastSurah();
-    select.value = String(startSurah);
-    loadSurah(startSurah);
   } catch (err) {
     setStatus("Kunne ikke hente listen over suraer. Tjek din internetforbindelse og genindlæs siden.", true);
   }
 }
-
-select.addEventListener("change", () => {
-  clearSearchResults();
-  bookmarksPanelEl.hidden = true;
-  loadSurah(select.value);
-});
 
 translationSelect.addEventListener("change", () => {
   selectedTranslation = translationEditions.find((e) => e.identifier === translationSelect.value);
   safeSetItem(LAST_TRANSLATION_KEY, selectedTranslation.identifier);
   updateSearchPlaceholder();
   clearSearchResults();
-  loadSurah(currentSurahNumber || select.value);
+  if (currentSurahNumber) loadSurah(currentSurahNumber);
 });
 
 reciterSelect.addEventListener("change", () => {
   selectedReciter = reciterEditions.find((e) => e.identifier === reciterSelect.value);
   safeSetItem(LAST_RECITER_KEY, selectedReciter.identifier);
-  loadSurah(currentSurahNumber || select.value);
+  if (currentSurahNumber) loadSurah(currentSurahNumber);
 });
 
 const searchForm = document.getElementById("search-form");
@@ -579,6 +651,15 @@ function clearSearchResults() {
   searchResultsEl.innerHTML = "";
   searchResultsEl.hidden = true;
 }
+
+function hideSearchPanel() {
+  searchPanelEl.hidden = true;
+}
+
+searchToggleBtn.addEventListener("click", () => {
+  searchPanelEl.hidden = !searchPanelEl.hidden;
+  if (!searchPanelEl.hidden) searchInput.focus();
+});
 
 function renderSearchResults(matches, keyword) {
   searchResultsEl.innerHTML = "";
@@ -621,8 +702,7 @@ function renderSearchResults(matches, keyword) {
 async function goToVerse(surahNumber, numberInSurah) {
   clearSearchResults();
   setMode("both");
-  select.value = String(surahNumber);
-  await loadSurah(surahNumber);
+  await openSurah(surahNumber);
 
   const target = document.getElementById(`verse-${numberInSurah}`);
   if (target) {
@@ -656,7 +736,6 @@ async function runSearch(keyword) {
 
 searchForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  bookmarksPanelEl.hidden = true;
   const keyword = searchInput.value.trim();
   if (!keyword) {
     clearSearchResults();
@@ -666,10 +745,11 @@ searchForm.addEventListener("submit", (event) => {
 });
 
 async function init() {
-  bookmarksLabelEl.textContent = `Bogmærker (${bookmarks.length})`;
+  updateBookmarksTabLabel();
   try {
     await loadEditionCatalog();
-    loadSurahList();
+    await loadSurahList();
+    showListView();
   } catch (err) {
     setStatus("Kunne ikke hente listen over oversættelser og recitere. Tjek din internetforbindelse og genindlæs siden.", true);
   }
