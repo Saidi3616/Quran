@@ -11,6 +11,7 @@ const statusEl = document.getElementById("status");
 const translationNoteEl = document.getElementById("translation-note");
 const player = document.getElementById("audio-player");
 const debugAudioLink = document.getElementById("debug-audio-link");
+const masterPlayButton = document.getElementById("play-surah-btn");
 
 let translationEdition = null;
 let verseQueue = [];
@@ -40,18 +41,23 @@ function surahTextUrl(number) {
   return `https://api.alquran.cloud/v1/surah/${number}/editions/quran-uthmani,${translationEdition.identifier},${AUDIO_EDITION}`;
 }
 
-function setButtonPlaying(button, playing) {
-  button.querySelector(".icon-play").classList.toggle("is-hidden", playing);
-  button.querySelector(".icon-pause").classList.toggle("is-hidden", !playing);
-  button.classList.toggle("is-playing", playing);
+function setPlayingState(el, playing) {
+  el.classList.toggle("is-playing", playing);
+  const playIcon = el.querySelector(".icon-play");
+  const pauseIcon = el.querySelector(".icon-pause");
+  if (playIcon && pauseIcon) {
+    playIcon.classList.toggle("is-hidden", playing);
+    pauseIcon.classList.toggle("is-hidden", !playing);
+  }
 }
 
 function stopAudio() {
   player.pause();
   if (currentIndex >= 0 && verseQueue[currentIndex]) {
-    setButtonPlaying(verseQueue[currentIndex].button, false);
+    setPlayingState(verseQueue[currentIndex].button, false);
   }
   currentIndex = -1;
+  setPlayingState(masterPlayButton, false);
 }
 
 function playAtIndex(index) {
@@ -67,13 +73,14 @@ function playAtIndex(index) {
   }
 
   if (currentIndex >= 0 && currentIndex !== index && verseQueue[currentIndex]) {
-    setButtonPlaying(verseQueue[currentIndex].button, false);
+    setPlayingState(verseQueue[currentIndex].button, false);
   }
 
   currentIndex = index;
   player.src = entry.url;
   debugAudioLink.href = entry.url;
-  setButtonPlaying(entry.button, true);
+  setPlayingState(entry.button, true);
+  setPlayingState(masterPlayButton, true);
   player.play().catch(() => {
     setStatus("Kunne ikke afspille lyden. Tjek din internetforbindelse.", true);
   });
@@ -173,7 +180,7 @@ function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
   });
 }
 
-function renderFlowing(ayahs, variant) {
+function renderFlowing(ayahs, audioAyahs, variant) {
   versesContainer.innerHTML = "";
   verseQueue = [];
 
@@ -189,12 +196,19 @@ function renderFlowing(ayahs, variant) {
     para.dir = "ltr";
   }
 
-  ayahs.forEach((ayah) => {
+  ayahs.forEach((ayah, index) => {
     para.appendChild(document.createTextNode(`${ayah.text} `));
 
-    const marker = document.createElement("span");
+    const marker = document.createElement("button");
+    marker.type = "button";
     marker.className = "verse-flow-marker";
     marker.textContent = ayah.numberInSurah;
+    marker.setAttribute("aria-label", `Afspil fra vers ${ayah.numberInSurah}`);
+
+    const audioUrl = audioAyahs[index]?.audio;
+    verseQueue.push({ button: marker, url: audioUrl });
+    marker.addEventListener("click", () => toggleAudio(index));
+
     para.appendChild(marker);
     para.appendChild(document.createTextNode(" "));
   });
@@ -205,9 +219,9 @@ function renderFlowing(ayahs, variant) {
 
 function renderCurrentView() {
   if (displayMode === "arabic") {
-    renderFlowing(currentArabicAyahs, "arabic");
+    renderFlowing(currentArabicAyahs, currentAudioAyahs, "arabic");
   } else if (displayMode === "english") {
-    renderFlowing(currentTranslationAyahs, "english");
+    renderFlowing(currentTranslationAyahs, currentAudioAyahs, "english");
   } else {
     renderVerses(currentArabicAyahs, currentTranslationAyahs, currentAudioAyahs);
   }
@@ -227,6 +241,14 @@ document.querySelectorAll(".mode-btn").forEach((btn) => {
     setMode(btn.dataset.mode);
     renderCurrentView();
   });
+});
+
+masterPlayButton.addEventListener("click", () => {
+  if (currentIndex >= 0) {
+    stopAudio();
+  } else {
+    playAtIndex(0);
+  }
 });
 
 async function loadSurah(number) {

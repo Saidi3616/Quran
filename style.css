@@ -237,6 +237,40 @@ body {
   color: var(--paper);
 }
 
+.play-surah-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto 24px;
+  font-family: "Karla", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--emerald);
+  background: transparent;
+  color: var(--emerald);
+  cursor: pointer;
+}
+
+.play-surah-btn:hover {
+  background: var(--emerald-soft);
+}
+
+.play-surah-btn.is-playing {
+  background: var(--emerald);
+  color: var(--paper);
+}
+
+.play-surah-btn svg {
+  fill: currentColor;
+}
+
+.play-surah-btn svg.is-hidden {
+  display: none;
+}
+
 .flow-card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -266,9 +300,9 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
   margin: 0 2px;
   border-radius: 999px;
   background: var(--emerald-soft);
@@ -277,6 +311,13 @@ body {
   font-size: 10.5px;
   font-weight: 700;
   vertical-align: middle;
+  border: none;
+  cursor: pointer;
+}
+
+.verse-flow-marker.is-playing {
+  background: var(--emerald);
+  color: var(--paper);
 }
 
 .search-form {
