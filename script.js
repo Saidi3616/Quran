@@ -100,10 +100,17 @@ function setPlayingState(el, playing) {
   }
 }
 
+function setEntryPlaying(entry, playing) {
+  setPlayingState(entry.button, playing);
+  if (entry.highlight) {
+    entry.highlight.classList.toggle("is-reading", playing);
+  }
+}
+
 function stopAudio() {
   player.pause();
   if (currentIndex >= 0 && verseQueue[currentIndex]) {
-    setPlayingState(verseQueue[currentIndex].button, false);
+    setEntryPlaying(verseQueue[currentIndex], false);
   }
   currentIndex = -1;
   setPlayingState(masterPlayButton, false);
@@ -122,16 +129,17 @@ function playAtIndex(index) {
   }
 
   if (currentIndex >= 0 && currentIndex !== index && verseQueue[currentIndex]) {
-    setPlayingState(verseQueue[currentIndex].button, false);
+    setEntryPlaying(verseQueue[currentIndex], false);
   }
 
   currentIndex = index;
   player.src = entry.url;
-  setPlayingState(entry.button, true);
+  setEntryPlaying(entry, true);
   setPlayingState(masterPlayButton, true);
   player.play().catch(() => {
     setStatus("Kunne ikke afspille lyden. Tjek din internetforbindelse.", true);
   });
+  entry.highlight?.scrollIntoView({ behavior: "smooth", block: "center" });
 
   preloadAudio(verseQueue[index + 1]?.url);
 }
@@ -254,7 +262,7 @@ function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
       <svg class="icon-pause is-hidden" viewBox="0 0 24 24" width="14" height="14"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
     `;
     const audioUrl = audioAyahs[index]?.audio;
-    verseQueue.push({ button: playButton, url: audioUrl });
+    verseQueue.push({ button: playButton, url: audioUrl, highlight: row });
     playButton.addEventListener("click", () => toggleAudio(index));
 
     const bookmarkButton = document.createElement("button");
@@ -322,7 +330,11 @@ function renderFlowing(ayahs, audioAyahs, variant) {
   }
 
   ayahs.forEach((ayah, index) => {
-    para.appendChild(document.createTextNode(`${ayah.text} `));
+    const segment = document.createElement("span");
+    segment.className = "flow-segment";
+    segment.textContent = ayah.text;
+    para.appendChild(segment);
+    para.appendChild(document.createTextNode(" "));
 
     const marker = document.createElement("button");
     marker.type = "button";
@@ -331,7 +343,7 @@ function renderFlowing(ayahs, audioAyahs, variant) {
     marker.setAttribute("aria-label", `Afspil fra vers ${ayah.numberInSurah}`);
 
     const audioUrl = audioAyahs[index]?.audio;
-    verseQueue.push({ button: marker, url: audioUrl });
+    verseQueue.push({ button: marker, url: audioUrl, highlight: segment });
     marker.addEventListener("click", () => toggleAudio(index));
 
     para.appendChild(marker);
