@@ -2,7 +2,7 @@ const API_BASE = "https://api.quranhub.com";
 const SURAH_LIST_URL = `${API_BASE}/v1/surah`;
 const DANISH_EDITIONS_URL = `${API_BASE}/v1/edition/language/da`;
 const FALLBACK_TRANSLATION = { identifier: "en.sahih", englishName: "Saheeh International (engelsk)", language: "en" };
-const AUDIO_EDITION = "ar.alafasy";
+const AUDIO_EDITION = "ar.alafasy.hafs";
 const BOOKMARKS_KEY = "quran-app-bookmarks";
 const LAST_SURAH_KEY = "quran-app-last-surah";
 
