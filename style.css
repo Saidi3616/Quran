@@ -90,6 +90,25 @@ body {
   min-width: min(100%, 320px);
 }
 
+.settings-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.settings-field {
+  flex: 1 1 220px;
+  max-width: 320px;
+  text-align: left;
+}
+
+.settings-field .sura-select {
+  width: 100%;
+  margin-bottom: 0;
+}
+
 .status {
   text-align: center;
   color: var(--ink-soft);
@@ -194,13 +213,6 @@ body {
   text-align: left;
   padding-top: 10px;
   border-top: 1px solid var(--line);
-}
-
-.translation-note {
-  text-align: center;
-  color: var(--ink-soft);
-  font-size: 12.5px;
-  margin: -12px 0 24px;
 }
 
 .mode-toggle {

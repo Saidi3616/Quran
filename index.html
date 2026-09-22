@@ -19,11 +19,22 @@
 <body>
   <main class="wrap">
     <header class="hero">
-      <p class="eyebrow">Trin 8 · Installerbar</p>
+      <p class="eyebrow">Eksperiment · QuranHub</p>
       <label class="select-label" for="sura-select">Vælg sura</label>
       <select id="sura-select" class="sura-select" aria-label="Vælg sura"></select>
       <h1 class="sura-name-ar" id="sura-name-ar" dir="rtl"></h1>
       <p class="sura-name-da" id="sura-name-en"></p>
+
+      <div class="settings-row">
+        <div class="settings-field">
+          <label class="select-label" for="translation-select">Oversættelse</label>
+          <select id="translation-select" class="sura-select" aria-label="Vælg oversættelse"></select>
+        </div>
+        <div class="settings-field">
+          <label class="select-label" for="reciter-select">Reciter</label>
+          <select id="reciter-select" class="sura-select" aria-label="Vælg reciter"></select>
+        </div>
+      </div>
     </header>
 
     <div class="mode-toggle" role="radiogroup" aria-label="Visningstype">
@@ -60,7 +71,6 @@
     <div class="search-results" id="search-results" hidden></div>
 
     <p class="status" id="status" role="status" hidden></p>
-    <p class="translation-note" id="translation-note" hidden></p>
 
     <section class="verses" id="verses" aria-label="Vers fra den valgte sura"></section>
   </main>

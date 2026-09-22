@@ -1,10 +1,11 @@
 const API_BASE = "https://api.quranhub.com";
 const SURAH_LIST_URL = `${API_BASE}/v1/surah`;
-const DANISH_EDITIONS_URL = `${API_BASE}/v1/edition/language/da`;
-const FALLBACK_TRANSLATION = { identifier: "en.sahih", englishName: "Saheeh International (engelsk)", language: "en" };
-const AUDIO_EDITION = "ar.alafasy.hafs";
+const EDITION_LIST_URL = `${API_BASE}/v1/edition`;
 const BOOKMARKS_KEY = "quran-app-bookmarks";
 const LAST_SURAH_KEY = "quran-app-last-surah";
+const LAST_TRANSLATION_KEY = "quran-app-last-translation";
+const LAST_RECITER_KEY = "quran-app-last-reciter";
+const PREFERRED_RECITER_IDENTIFIER = "ar.alafasy.hafs";
 
 function safeGetItem(key) {
   try {
@@ -44,15 +45,20 @@ function getLastSurah() {
 }
 
 const select = document.getElementById("sura-select");
+const translationSelect = document.getElementById("translation-select");
+const reciterSelect = document.getElementById("reciter-select");
 const suraNameAr = document.getElementById("sura-name-ar");
 const suraNameEn = document.getElementById("sura-name-en");
 const versesContainer = document.getElementById("verses");
 const statusEl = document.getElementById("status");
-const translationNoteEl = document.getElementById("translation-note");
 const player = document.getElementById("audio-player");
 const masterPlayButton = document.getElementById("play-surah-btn");
 
-let translationEdition = null;
+let translationEditions = [];
+let reciterEditions = [];
+let selectedTranslation = null; // hele edition-objektet
+let selectedReciter = null;
+
 let verseQueue = [];
 let currentIndex = -1;
 const preloadedAudio = new Map();
@@ -81,7 +87,7 @@ function setStatus(text, isError = false) {
 }
 
 function surahTextUrl(number) {
-  return `${API_BASE}/v1/surah/${number}/editions/quran-uthmani,${translationEdition.identifier},${AUDIO_EDITION}`;
+  return `${API_BASE}/v1/surah/${number}/editions/quran-uthmani,${selectedTranslation.identifier},${selectedReciter.identifier}`;
 }
 
 function setPlayingState(el, playing) {
@@ -148,25 +154,64 @@ player.addEventListener("error", () => {
   stopAudio();
 });
 
-async function resolveTranslationEdition() {
-  try {
-    const response = await fetch(DANISH_EDITIONS_URL);
-    if (response.ok) {
-      const json = await response.json();
-      const translations = json.data.filter((edition) => edition.type === "translation");
-      if (translations.length > 0) {
-        translationEdition = translations[0];
-        translationNoteEl.hidden = true;
-        return;
-      }
-    }
-  } catch (err) {
-    // falder igennem til engelsk fallback herunder
-  }
+function editionLabel(edition) {
+  const name = edition.englishName || edition.name || edition.identifier;
+  return edition.language ? `${name} (${edition.language})` : name;
+}
 
-  translationEdition = FALLBACK_TRANSLATION;
-  translationNoteEl.textContent = `Dansk oversættelse ikke tilgængelig hos denne kilde — viser ${FALLBACK_TRANSLATION.englishName} i stedet.`;
-  translationNoteEl.hidden = false;
+async function loadEditionCatalog() {
+  setStatus("Henter oversættelser og recitere …");
+
+  const response = await fetch(EDITION_LIST_URL);
+  if (!response.ok) throw new Error(`Status ${response.status}`);
+  const json = await response.json();
+  const editions = json.data;
+
+  translationEditions = editions
+    .filter((edition) => edition.format === "text" && edition.type === "translation")
+    .sort((a, b) => editionLabel(a).localeCompare(editionLabel(b)));
+
+  reciterEditions = editions
+    .filter((edition) => edition.format === "audio")
+    .sort((a, b) => editionLabel(a).localeCompare(editionLabel(b)));
+
+  translationSelect.innerHTML = "";
+  translationEditions.forEach((edition) => {
+    const option = document.createElement("option");
+    option.value = edition.identifier;
+    option.textContent = editionLabel(edition);
+    translationSelect.appendChild(option);
+  });
+
+  reciterSelect.innerHTML = "";
+  reciterEditions.forEach((edition) => {
+    const option = document.createElement("option");
+    option.value = edition.identifier;
+    option.textContent = editionLabel(edition);
+    reciterSelect.appendChild(option);
+  });
+
+  const lastTranslation = safeGetItem(LAST_TRANSLATION_KEY);
+  const danishTranslation = translationEditions.find((e) => e.language === "da");
+  selectedTranslation =
+    translationEditions.find((e) => e.identifier === lastTranslation) ||
+    danishTranslation ||
+    translationEditions.find((e) => e.language === "en") ||
+    translationEditions[0];
+
+  const lastReciter = safeGetItem(LAST_RECITER_KEY);
+  selectedReciter =
+    reciterEditions.find((e) => e.identifier === lastReciter) ||
+    reciterEditions.find((e) => e.identifier === PREFERRED_RECITER_IDENTIFIER) ||
+    reciterEditions[0];
+
+  translationSelect.value = selectedTranslation.identifier;
+  reciterSelect.value = selectedReciter.identifier;
+  updateSearchPlaceholder();
+}
+
+function updateSearchPlaceholder() {
+  searchInput.placeholder = `Søg i oversættelsen (${editionLabel(selectedTranslation)}) …`;
 }
 
 function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
@@ -476,6 +521,20 @@ select.addEventListener("change", () => {
   loadSurah(select.value);
 });
 
+translationSelect.addEventListener("change", () => {
+  selectedTranslation = translationEditions.find((e) => e.identifier === translationSelect.value);
+  safeSetItem(LAST_TRANSLATION_KEY, selectedTranslation.identifier);
+  updateSearchPlaceholder();
+  clearSearchResults();
+  loadSurah(currentSurahNumber || select.value);
+});
+
+reciterSelect.addEventListener("change", () => {
+  selectedReciter = reciterEditions.find((e) => e.identifier === reciterSelect.value);
+  safeSetItem(LAST_RECITER_KEY, selectedReciter.identifier);
+  loadSurah(currentSurahNumber || select.value);
+});
+
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-input");
 const searchResultsEl = document.getElementById("search-results");
@@ -550,7 +609,7 @@ async function runSearch(keyword) {
   setStatus(`Søger efter "${keyword}" …`);
 
   try {
-    const url = `${API_BASE}/v1/search/${encodeURIComponent(keyword)}?language=${translationEdition.language}`;
+    const url = `${API_BASE}/v1/search/${encodeURIComponent(keyword)}?language=${selectedTranslation.language}`;
     const response = await fetch(url);
 
     if (response.status === 404) {
@@ -581,9 +640,12 @@ searchForm.addEventListener("submit", (event) => {
 
 async function init() {
   bookmarksLabelEl.textContent = `Bogmærker (${bookmarks.length})`;
-  setStatus("Henter oversættelseskilde …");
-  await resolveTranslationEdition();
-  loadSurahList();
+  try {
+    await loadEditionCatalog();
+    loadSurahList();
+  } catch (err) {
+    setStatus("Kunne ikke hente listen over oversættelser og recitere. Tjek din internetforbindelse og genindlæs siden.", true);
+  }
 }
 
 init();
