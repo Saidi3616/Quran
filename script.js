@@ -154,6 +154,15 @@ player.addEventListener("error", () => {
   stopAudio();
 });
 
+function dedupeByIdentifier(editions) {
+  const seen = new Set();
+  return editions.filter((edition) => {
+    if (seen.has(edition.identifier)) return false;
+    seen.add(edition.identifier);
+    return true;
+  });
+}
+
 function editionLabel(edition) {
   const name = edition.englishName || edition.name || edition.identifier;
   return edition.language ? `${name} (${edition.language})` : name;
@@ -184,7 +193,7 @@ async function loadEditionCatalog() {
   const response = await fetch(EDITION_LIST_URL);
   if (!response.ok) throw new Error(`Status ${response.status}`);
   const json = await response.json();
-  const editions = json.data;
+  const editions = dedupeByIdentifier(json.data);
 
   translationEditions = editions
     .filter((edition) => edition.format === "text" && edition.type === "translation")
