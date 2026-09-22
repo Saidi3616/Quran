@@ -12,12 +12,24 @@
 <body>
   <main class="wrap">
     <header class="hero">
-      <p class="eyebrow">Trin 4 · Lyd</p>
+      <p class="eyebrow">Trin 5 · Søgning</p>
       <label class="select-label" for="sura-select">Vælg sura</label>
       <select id="sura-select" class="sura-select" aria-label="Vælg sura"></select>
       <h1 class="sura-name-ar" id="sura-name-ar" dir="rtl"></h1>
       <p class="sura-name-da" id="sura-name-en"></p>
     </header>
+
+    <form id="search-form" class="search-form">
+      <input
+        type="search"
+        id="search-input"
+        class="search-input"
+        placeholder="Søg i oversættelsen (lige nu engelsk), fx “mercy”"
+        aria-label="Søgeord"
+      />
+      <button type="submit" class="search-button">Søg</button>
+    </form>
+    <div class="search-results" id="search-results" hidden></div>
 
     <p class="status" id="status" role="status" hidden></p>
     <p class="translation-note" id="translation-note" hidden></p>

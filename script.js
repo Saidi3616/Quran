@@ -122,6 +122,7 @@ function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
   arabicAyahs.forEach((ayah, index) => {
     const row = document.createElement("div");
     row.className = "verse";
+    row.id = `verse-${ayah.numberInSurah}`;
 
     const side = document.createElement("div");
     side.className = "verse-side";
@@ -216,7 +217,109 @@ async function loadSurahList() {
 }
 
 select.addEventListener("change", () => {
+  clearSearchResults();
   loadSurah(select.value);
+});
+
+const searchForm = document.getElementById("search-form");
+const searchInput = document.getElementById("search-input");
+const searchResultsEl = document.getElementById("search-results");
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function highlightMatch(text, keyword) {
+  const pattern = new RegExp(`(${escapeRegExp(keyword)})`, "ig");
+  return text.replace(pattern, "<mark>$1</mark>");
+}
+
+function clearSearchResults() {
+  searchResultsEl.innerHTML = "";
+  searchResultsEl.hidden = true;
+}
+
+function renderSearchResults(matches, keyword) {
+  searchResultsEl.innerHTML = "";
+  searchResultsEl.hidden = false;
+
+  if (matches.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "search-empty";
+    empty.textContent = `Ingen vers matcher "${keyword}".`;
+    searchResultsEl.appendChild(empty);
+    return;
+  }
+
+  const count = document.createElement("p");
+  count.className = "search-count";
+  count.textContent = `${matches.length} vers matcher "${keyword}"`;
+  searchResultsEl.appendChild(count);
+
+  matches.forEach((match) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "search-result";
+
+    const meta = document.createElement("span");
+    meta.className = "search-result-meta";
+    meta.textContent = `${match.surah.englishName} ${match.surah.number}:${match.numberInSurah}`;
+
+    const snippet = document.createElement("span");
+    snippet.className = "search-result-snippet";
+    snippet.innerHTML = highlightMatch(match.text, keyword);
+
+    item.appendChild(meta);
+    item.appendChild(snippet);
+    item.addEventListener("click", () => goToVerse(match.surah.number, match.numberInSurah));
+
+    searchResultsEl.appendChild(item);
+  });
+}
+
+async function goToVerse(surahNumber, numberInSurah) {
+  clearSearchResults();
+  select.value = String(surahNumber);
+  await loadSurah(surahNumber);
+
+  const target = document.getElementById(`verse-${numberInSurah}`);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.classList.add("verse-highlight");
+    setTimeout(() => target.classList.remove("verse-highlight"), 2000);
+  }
+}
+
+async function runSearch(keyword) {
+  setStatus(`Søger efter "${keyword}" …`);
+
+  try {
+    const url = `https://api.alquran.cloud/v1/search/${encodeURIComponent(keyword)}/all/${translationEdition.identifier}`;
+    const response = await fetch(url);
+
+    if (response.status === 404) {
+      renderSearchResults([], keyword);
+      setStatus("");
+      return;
+    }
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+
+    const json = await response.json();
+    renderSearchResults(json.data.matches, keyword);
+    setStatus("");
+  } catch (err) {
+    setStatus("Kunne ikke gennemføre søgningen. Tjek din internetforbindelse og prøv igen.", true);
+  }
+}
+
+searchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const keyword = searchInput.value.trim();
+  if (!keyword) {
+    clearSearchResults();
+    return;
+  }
+  runSearch(keyword);
 });
 
 async function init() {
