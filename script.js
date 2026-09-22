@@ -842,10 +842,6 @@ function escapeRegExp(text) {
 
 const ARABIC_CHAR_PATTERN = /[؀-ۿ]/;
 
-function detectSearchLanguage(text) {
-  return ARABIC_CHAR_PATTERN.test(text) ? "ar" : "en";
-}
-
 function highlightMatch(text, keyword) {
   const pattern = new RegExp(`(${escapeRegExp(keyword)})`, "ig");
   return text.replace(pattern, "<mark>$1</mark>");
@@ -920,12 +916,17 @@ let searchRequestId = 0;
 
 async function runSearch(keyword) {
   const requestId = ++searchRequestId;
-  const language = detectSearchLanguage(keyword);
+  // API'et bruger ikke "language" — den kigger på hvilken "editionIdentifier" vi sender,
+  // så vi vælger selv en arabisk eller en oversat udgave ud fra søgeordet.
+  const isArabic = ARABIC_CHAR_PATTERN.test(keyword);
+  const editionIdentifier = isArabic
+    ? "quran-uthmani"
+    : (selectedTranslation ? selectedTranslation.identifier : "en.sahih");
   searchResultsEl.hidden = false;
   searchResultsEl.innerHTML = `<p class="search-count">Søger …</p>`;
 
   try {
-    const url = `${API_BASE}/v1/search/${encodeURIComponent(keyword)}?language=${language}`;
+    const url = `${API_BASE}/v1/search/${encodeURIComponent(keyword)}?editionIdentifier=${encodeURIComponent(editionIdentifier)}&exactSearch=false`;
     const response = await fetch(url);
 
     if (requestId !== searchRequestId) return; // et nyere søgeord blev indtastet i mellemtiden
@@ -934,16 +935,20 @@ async function runSearch(keyword) {
       renderSearchResults([], keyword);
       return;
     }
-    if (!response.ok) throw new Error(`Status ${response.status}`);
+    if (!response.ok) {
+      console.error("Søgning fejlede", response.status, await response.text().catch(() => ""));
+      throw new Error(`Status ${response.status}`);
+    }
 
     const json = await response.json();
     renderSearchResults(json.data.matches, keyword);
   } catch (err) {
     if (requestId !== searchRequestId) return;
+    console.error("Søgefejl", err);
     searchResultsEl.innerHTML = "";
     const error = document.createElement("p");
     error.className = "search-empty";
-    error.textContent = "Kunne ikke gennemføre søgningen. Tjek din internetforbindelse.";
+    error.textContent = "Kunne ikke gennemføre søgningen lige nu. Prøv igen om lidt.";
     searchResultsEl.appendChild(error);
   }
 }
