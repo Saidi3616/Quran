@@ -52,9 +52,11 @@ const tabBarEl = document.getElementById("tab-bar");
 const bookmarksTabBtn = document.getElementById("bookmarks-tab-btn");
 const listViewEl = document.getElementById("list-view");
 const surahListEl = document.getElementById("surah-list");
+const juzListEl = document.getElementById("juz-list");
 const bookmarksListEl = document.getElementById("bookmarks-list");
 const readingViewEl = document.getElementById("reading-view");
 const backBtn = document.getElementById("back-btn");
+const bookmarksShortcutBtn = document.getElementById("bookmarks-shortcut-btn");
 
 const translationSelect = document.getElementById("translation-select");
 const reciterSelect = document.getElementById("reciter-select");
@@ -252,14 +254,37 @@ function updateSearchPlaceholder() {
   searchInput.placeholder = `Søg i oversættelsen (${editionLabel(selectedTranslation)}) …`;
 }
 
+function surahDividerLabel(ayah) {
+  return ayah.surah ? `${ayah.surah.englishName} — ${ayah.surah.name}` : null;
+}
+
+function appendSurahDivider(container, label) {
+  const divider = document.createElement("div");
+  divider.className = "juz-surah-divider";
+  divider.textContent = label;
+  container.appendChild(divider);
+}
+
 function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
   versesContainer.innerHTML = "";
   verseQueue = [];
+  let lastDivider = null;
 
   arabicAyahs.forEach((ayah, index) => {
+    const dividerLabel = surahDividerLabel(ayah);
+    if (dividerLabel && dividerLabel !== lastDivider) {
+      appendSurahDivider(versesContainer, dividerLabel);
+      lastDivider = dividerLabel;
+    }
+
+    const bookmarkSurah = ayah.surah?.number ?? currentSurahNumber;
+    const bookmarkSurahName = ayah.surah?.englishName ?? currentSurahEnglishName;
+
     const row = document.createElement("div");
     row.className = "verse";
-    row.id = `verse-${ayah.numberInSurah}`;
+    if (!ayah.surah) {
+      row.id = `verse-${ayah.numberInSurah}`; // kun entydigt inden for én sura
+    }
 
     const side = document.createElement("div");
     side.className = "verse-side";
@@ -288,13 +313,13 @@ function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
       <svg class="icon-outline" viewBox="0 0 24 24" width="14" height="14"><path d="M6 2h12a1 1 0 0 1 1 1v19l-7-4-7 4V3a1 1 0 0 1 1-1z" fill="none"/></svg>
       <svg class="icon-filled is-hidden" viewBox="0 0 24 24" width="14" height="14"><path d="M6 2h12a1 1 0 0 1 1 1v19l-7-4-7 4V3a1 1 0 0 1 1-1z"/></svg>
     `;
-    setBookmarkButtonState(bookmarkButton, isBookmarked(currentSurahNumber, ayah.numberInSurah));
+    setBookmarkButtonState(bookmarkButton, isBookmarked(bookmarkSurah, ayah.numberInSurah));
     const snippetText = (translationAyahs[index]?.text ?? "").slice(0, 90);
     bookmarkButton.addEventListener("click", () => {
       toggleBookmark(
         {
-          surah: currentSurahNumber,
-          surahName: currentSurahEnglishName,
+          surah: bookmarkSurah,
+          surahName: bookmarkSurahName,
           ayah: ayah.numberInSurah,
           snippet: snippetText,
         },
@@ -331,20 +356,32 @@ function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
 function renderFlowing(ayahs, audioAyahs, variant) {
   versesContainer.innerHTML = "";
   verseQueue = [];
+  let lastDivider = null;
+  let para = null;
 
-  const card = document.createElement("div");
-  card.className = "flow-card";
-
-  const para = document.createElement("p");
-  para.className = `verse-flow verse-flow-${variant}`;
-  if (variant === "arabic") {
-    para.dir = "rtl";
-    para.lang = "ar";
-  } else {
-    para.dir = "ltr";
+  function startNewParagraph() {
+    para = document.createElement("p");
+    para.className = `verse-flow verse-flow-${variant}`;
+    if (variant === "arabic") {
+      para.dir = "rtl";
+      para.lang = "ar";
+    } else {
+      para.dir = "ltr";
+    }
+    const card = document.createElement("div");
+    card.className = "flow-card";
+    card.appendChild(para);
+    versesContainer.appendChild(card);
   }
 
   ayahs.forEach((ayah, index) => {
+    const dividerLabel = surahDividerLabel(ayah);
+    if (!para || (dividerLabel && dividerLabel !== lastDivider)) {
+      if (dividerLabel) appendSurahDivider(versesContainer, dividerLabel);
+      lastDivider = dividerLabel;
+      startNewParagraph();
+    }
+
     const segment = document.createElement("span");
     segment.className = "flow-segment";
     segment.textContent = ayah.text;
@@ -364,9 +401,6 @@ function renderFlowing(ayahs, audioAyahs, variant) {
     para.appendChild(marker);
     para.appendChild(document.createTextNode(" "));
   });
-
-  card.appendChild(para);
-  versesContainer.appendChild(card);
 }
 
 function renderCurrentView() {
@@ -513,12 +547,19 @@ function setTab(tab) {
     btn.setAttribute("aria-selected", String(active));
   });
   surahListEl.hidden = tab !== "surahs";
+  juzListEl.hidden = tab !== "juz";
   bookmarksListEl.hidden = tab !== "bookmarks";
+  if (tab === "juz") renderJuzList();
   if (tab === "bookmarks") renderBookmarksList();
 }
 
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => setTab(btn.dataset.tab));
+});
+
+bookmarksShortcutBtn.addEventListener("click", () => {
+  if (currentView === "reading") showListView();
+  setTab("bookmarks");
 });
 
 async function openSurah(number) {
@@ -595,6 +636,18 @@ function renderSurahList() {
 
     row.appendChild(number);
     row.appendChild(info);
+
+    // QuranHubs suraliste indeholder (indtil videre observeret) ikke et
+    // sidetal for hvor suraen starter i en trykt Koran. Viser det kun
+    // hvis API'et rent faktisk leverer et startPage-felt.
+    const page = surah.startPage ?? surah.page;
+    if (page != null) {
+      const pageEl = document.createElement("span");
+      pageEl.className = "surah-row-page";
+      pageEl.textContent = page;
+      row.appendChild(pageEl);
+    }
+
     row.addEventListener("click", () => openSurah(surah.number));
 
     surahListEl.appendChild(row);
@@ -617,6 +670,69 @@ async function loadSurahList() {
     setStatus("");
   } catch (err) {
     setStatus("Kunne ikke hente listen over suraer. Tjek din internetforbindelse og genindlæs siden.", true);
+  }
+}
+
+// --- Juz ---
+function renderJuzList() {
+  if (juzListEl.childElementCount > 0) return; // 1-30 er statisk, byg kun én gang
+
+  for (let number = 1; number <= 30; number += 1) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "surah-row";
+
+    const numberEl = document.createElement("span");
+    numberEl.className = "surah-row-number";
+    numberEl.textContent = number;
+
+    const info = document.createElement("span");
+    info.className = "surah-row-info";
+    const name = document.createElement("span");
+    name.className = "surah-row-name";
+    name.textContent = `Juz ${number}`;
+    info.appendChild(name);
+
+    row.appendChild(numberEl);
+    row.appendChild(info);
+    row.addEventListener("click", () => openJuz(number));
+
+    juzListEl.appendChild(row);
+  }
+}
+
+async function openJuz(number) {
+  hideSearchPanel();
+  showReadingView();
+  await loadJuz(number);
+}
+
+async function loadJuz(number) {
+  stopAudio();
+  preloadedAudio.clear();
+  versesContainer.innerHTML = "";
+  setStatus("Henter juz …");
+
+  try {
+    const url = `${API_BASE}/v1/juz/${number}/editions/quran-uthmani,${selectedTranslation.identifier},${selectedReciter.identifier}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    const json = await response.json();
+    const [arabicEdition, translationEditionData, audioEditionData] = json.data;
+
+    suraNameAr.textContent = `الجزء ${number}`;
+    suraNameEn.textContent = `Juz ${number}`;
+
+    currentArabicAyahs = arabicEdition.ayahs;
+    currentTranslationAyahs = translationEditionData.ayahs;
+    currentAudioAyahs = audioEditionData.ayahs;
+    currentSurahNumber = null; // en juz dækker flere suraer, se ayah.surah i stedet
+    currentSurahEnglishName = "";
+
+    renderCurrentView();
+    setStatus("");
+  } catch (err) {
+    setStatus("Kunne ikke hente juz'en. Tjek din internetforbindelse og prøv igen.", true);
   }
 }
 

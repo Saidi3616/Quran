@@ -19,9 +19,17 @@
 <body>
   <div class="app-bar">
     <h1 class="app-title">Koran App</h1>
-    <button type="button" id="search-toggle-btn" class="icon-btn" aria-label="Søg">
-      <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
-    </button>
+    <div class="app-bar-icons">
+      <button type="button" id="bookmarks-shortcut-btn" class="icon-btn" aria-label="Gå til bogmærker">
+        <svg viewBox="0 0 24 24" width="19" height="19"><path d="M6 2h12a1 1 0 0 1 1 1v19l-7-4-7 4V3a1 1 0 0 1 1-1z"/></svg>
+      </button>
+      <button type="button" id="search-toggle-btn" class="icon-btn" aria-label="Søg">
+        <svg viewBox="0 0 24 24" width="19" height="19"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+      </button>
+      <button type="button" id="overflow-menu-btn" class="icon-btn" aria-label="Flere valgmuligheder">
+        <svg viewBox="0 0 24 24" width="19" height="19"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      </button>
+    </div>
   </div>
 
   <div class="search-panel" id="search-panel" hidden>
@@ -41,13 +49,15 @@
   <p class="status" id="status" role="status" hidden></p>
 
   <div class="tab-bar" id="tab-bar" role="tablist">
-    <button type="button" class="tab-btn is-active" data-tab="surahs" role="tab" aria-selected="true">Suraer</button>
-    <button type="button" class="tab-btn" data-tab="bookmarks" role="tab" aria-selected="false" id="bookmarks-tab-btn">Bogmærker</button>
+    <button type="button" class="tab-btn is-active" data-tab="surahs" role="tab" aria-selected="true">SURAER</button>
+    <button type="button" class="tab-btn" data-tab="juz" role="tab" aria-selected="false">JUZ'</button>
+    <button type="button" class="tab-btn" data-tab="bookmarks" role="tab" aria-selected="false" id="bookmarks-tab-btn">BOGMÆRKER</button>
   </div>
 
   <main class="wrap">
     <div class="list-view" id="list-view">
       <div class="surah-list" id="surah-list" role="tabpanel"></div>
+      <div class="juz-list" id="juz-list" role="tabpanel" hidden></div>
       <div class="bookmarks-list" id="bookmarks-list" role="tabpanel" hidden></div>
     </div>
 

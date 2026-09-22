@@ -8,20 +8,22 @@
   --gold-soft: #f1e6cd;
   --line: #ddd4c0;
   --card: #ffffff;
+  --row-alt: #f3efe4;
   --danger: #b3452f;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #10201c;
-    --ink: #ede7d9;
-    --ink-soft: #a9b3ab;
-    --emerald: #4fb39c;
-    --emerald-soft: #1a332d;
+    --paper: #101112;
+    --ink: #f5f5f6;
+    --ink-soft: #8d9094;
+    --emerald: #35c9c1;
+    --emerald-soft: #12302e;
     --gold: #d7ae5c;
     --gold-soft: #33291a;
-    --line: #2a3b34;
-    --card: #16281f;
+    --line: #232426;
+    --card: #1a1b1d;
+    --row-alt: #17181a;
     --danger: #e08066;
   }
 }
@@ -61,6 +63,12 @@ body {
   font-size: 22px;
   font-weight: 700;
   margin: 0;
+}
+
+.app-bar-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .icon-btn {
@@ -106,8 +114,9 @@ body {
 .tab-btn {
   flex: 1 1 0;
   font-family: "Karla", sans-serif;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   padding: 14px 8px;
   border: none;
   background: none;
@@ -127,6 +136,7 @@ body {
 }
 
 .surah-list[hidden],
+.juz-list[hidden],
 .bookmarks-list[hidden],
 .list-view[hidden],
 .reading-view[hidden],
@@ -140,18 +150,28 @@ body {
   align-items: center;
   gap: 16px;
   width: 100%;
-  padding: 14px 4px;
+  padding: 16px 12px;
   border: none;
-  border-bottom: 1px solid var(--line);
-  background: none;
+  background: var(--paper);
   color: var(--ink);
   text-align: left;
   cursor: pointer;
   font-family: "Karla", sans-serif;
 }
 
+.surah-row:nth-child(even) {
+  background: var(--row-alt);
+}
+
 .surah-row:hover {
   background: var(--emerald-soft);
+}
+
+.surah-row-page {
+  flex: 0 0 auto;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  color: var(--ink-soft);
 }
 
 .surah-row.is-last-read {
@@ -525,6 +545,23 @@ body {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 24px 22px;
+}
+
+.juz-surah-divider {
+  font-family: "Amiri", Georgia, serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--emerald);
+  text-align: center;
+  margin: 28px 0 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.juz-surah-divider:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 .verse-flow {
