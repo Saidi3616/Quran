@@ -1,6 +1,7 @@
-const SURAH_LIST_URL = "https://api.alquran.cloud/v1/surah";
-const DANISH_EDITIONS_URL = "https://api.alquran.cloud/v1/edition/language/da";
-const FALLBACK_TRANSLATION = { identifier: "en.sahih", englishName: "Saheeh International (engelsk)" };
+const API_BASE = "https://api.quranhub.com";
+const SURAH_LIST_URL = `${API_BASE}/v1/surah`;
+const DANISH_EDITIONS_URL = `${API_BASE}/v1/edition/language/da`;
+const FALLBACK_TRANSLATION = { identifier: "en.sahih", englishName: "Saheeh International (engelsk)", language: "en" };
 const AUDIO_EDITION = "ar.alafasy";
 const BOOKMARKS_KEY = "quran-app-bookmarks";
 const LAST_SURAH_KEY = "quran-app-last-surah";
@@ -80,7 +81,7 @@ function setStatus(text, isError = false) {
 }
 
 function surahTextUrl(number) {
-  return `https://api.alquran.cloud/v1/surah/${number}/editions/quran-uthmani,${translationEdition.identifier},${AUDIO_EDITION}`;
+  return `${API_BASE}/v1/surah/${number}/editions/quran-uthmani,${translationEdition.identifier},${AUDIO_EDITION}`;
 }
 
 function setPlayingState(el, playing) {
@@ -549,7 +550,7 @@ async function runSearch(keyword) {
   setStatus(`Søger efter "${keyword}" …`);
 
   try {
-    const url = `https://api.alquran.cloud/v1/search/${encodeURIComponent(keyword)}/all/${translationEdition.identifier}`;
+    const url = `${API_BASE}/v1/search/${encodeURIComponent(keyword)}?language=${translationEdition.language}`;
     const response = await fetch(url);
 
     if (response.status === 404) {
