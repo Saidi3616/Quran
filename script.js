@@ -562,6 +562,88 @@ bookmarksShortcutBtn.addEventListener("click", () => {
   setTab("bookmarks");
 });
 
+// --- Tre-prikker-menu ---
+const overflowMenuBtn = document.getElementById("overflow-menu-btn");
+const overflowMenuEl = document.getElementById("overflow-menu");
+const lastPageBtn = document.getElementById("last-page-btn");
+const helpBtn = document.getElementById("help-btn");
+const aboutBtn = document.getElementById("about-btn");
+const infoOverlayEl = document.getElementById("info-overlay");
+const infoTitleEl = document.getElementById("info-title");
+const infoBodyEl = document.getElementById("info-body");
+const infoCloseBtn = document.getElementById("info-close-btn");
+
+function closeOverflowMenu() {
+  overflowMenuEl.hidden = true;
+  overflowMenuBtn.setAttribute("aria-expanded", "false");
+}
+
+overflowMenuBtn.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const willOpen = overflowMenuEl.hidden;
+  overflowMenuEl.hidden = !willOpen;
+  overflowMenuBtn.setAttribute("aria-expanded", String(willOpen));
+});
+
+document.addEventListener("click", (event) => {
+  if (!overflowMenuEl.hidden && !overflowMenuEl.contains(event.target) && event.target !== overflowMenuBtn) {
+    closeOverflowMenu();
+  }
+});
+
+function showInfo(title, bodyHtml) {
+  infoTitleEl.textContent = title;
+  infoBodyEl.innerHTML = bodyHtml;
+  infoOverlayEl.hidden = false;
+}
+
+infoCloseBtn.addEventListener("click", () => {
+  infoOverlayEl.hidden = true;
+});
+
+lastPageBtn.addEventListener("click", () => {
+  closeOverflowMenu();
+  const lastSurah = getLastSurah();
+  if (lastSurah) {
+    openSurah(lastSurah);
+  } else {
+    setStatus("Du har ikke åbnet en sura endnu.", true);
+  }
+});
+
+helpBtn.addEventListener("click", () => {
+  closeOverflowMenu();
+  showInfo(
+    "Hjælp",
+    `
+    <h3>Kom i gang</h3>
+    <p>Tryk på en sura i listen for at åbne den. Brug pilen øverst til venstre for at komme tilbage til listen igen.</p>
+    <h3>Oversættelse og reciter</h3>
+    <p>Inde i en sura kan du vælge mellem alle tilgængelige oversættelser og recitere øverst på siden.</p>
+    <h3>Visning</h3>
+    <p>Skift mellem "Arabisk", "Engelsk" og "Begge" for at læse teksten som du foretrækker det.</p>
+    <h3>Lyd</h3>
+    <p>Tryk på afspilningsikonet ved et vers for at høre det, eller "Afspil hele suraen" for at høre den fra ende til anden. Det vers der spiller lige nu bliver fremhævet.</p>
+    <h3>Bogmærker</h3>
+    <p>Tryk på bogmærke-ikonet ved et vers for at gemme det. Find dine gemte vers under fanen "Bogmærker".</p>
+    <h3>Søgning</h3>
+    <p>Tryk på forstørrelsesglasset øverst for at søge efter et ord i den valgte oversættelse.</p>
+    `
+  );
+});
+
+aboutBtn.addEventListener("click", () => {
+  closeOverflowMenu();
+  showInfo(
+    "Om appen",
+    `
+    <p>Koran App er et personligt lærings-projekt, bygget trin for trin som en øvelse i at bygge software sammen med AI.</p>
+    <p>Appen henter Koranens tekst, oversættelser og recitationer fra det offentlige QuranHub-API (api.quranhub.com), og er ikke tilknyttet eller godkendt af nogen religiøs myndighed.</p>
+    <p>Bogmærker og dine valg af oversættelse/reciter gemmes kun lokalt på din egen enhed — der er ingen server, konto eller sporing.</p>
+    `
+  );
+});
+
 async function openSurah(number) {
   hideSearchPanel();
   showReadingView();
