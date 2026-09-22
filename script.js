@@ -15,6 +15,15 @@ const debugAudioLink = document.getElementById("debug-audio-link");
 let translationEdition = null;
 let verseQueue = [];
 let currentIndex = -1;
+const preloadedAudio = new Map();
+
+function preloadAudio(url) {
+  if (!url || preloadedAudio.has(url)) return;
+  const audio = new Audio();
+  audio.preload = "auto";
+  audio.src = url;
+  preloadedAudio.set(url, audio);
+}
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
@@ -63,6 +72,8 @@ function playAtIndex(index) {
   player.play().catch(() => {
     setStatus("Kunne ikke afspille lyden. Tjek din internetforbindelse.", true);
   });
+
+  preloadAudio(verseQueue[index + 1]?.url);
 }
 
 function toggleAudio(index) {
@@ -158,6 +169,7 @@ function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
 
 async function loadSurah(number) {
   stopAudio();
+  preloadedAudio.clear();
   select.disabled = true;
   versesContainer.innerHTML = "";
   setStatus("Henter vers …");
