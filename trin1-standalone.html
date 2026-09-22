@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Koran App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Karla:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #fbf8f2;
+      --ink: #1c2620;
+      --ink-soft: #55645c;
+      --emerald: #146356;
+      --emerald-soft: #dbe9e5;
+      --gold: #b98b34;
+      --gold-soft: #f1e6cd;
+      --line: #ddd4c0;
+      --card: #ffffff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #10201c;
+        --ink: #ede7d9;
+        --ink-soft: #a9b3ab;
+        --emerald: #4fb39c;
+        --emerald-soft: #1a332d;
+        --gold: #d7ae5c;
+        --gold-soft: #33291a;
+        --line: #2a3b34;
+        --card: #16281f;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Karla", -apple-system, sans-serif;
+      line-height: 1.55;
+    }
+
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .eyebrow {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      margin: 0 0 14px;
+    }
+
+    .sura-name-ar {
+      font-family: "Amiri", Georgia, serif;
+      font-weight: 700;
+      font-size: clamp(38px, 9vw, 52px);
+      margin: 0 0 8px;
+    }
+
+    .sura-name-da {
+      color: var(--ink-soft);
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .verses {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .verse {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .verse-num {
+      flex: 0 0 auto;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--emerald-soft);
+      color: var(--emerald);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .verse-text {
+      flex: 1 1 auto;
+      font-family: "Amiri", Georgia, serif;
+      font-size: clamp(22px, 4.5vw, 28px);
+      line-height: 2;
+      text-align: right;
+    }
+
+    @media (max-width: 480px) {
+      .wrap {
+        padding: 36px 16px 60px;
+      }
+
+      .verse {
+        padding: 16px;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <p class="eyebrow">Trin 1 · Læsning</p>
+      <h1 class="sura-name-ar" dir="rtl">الفاتحة</h1>
+      <p class="sura-name-da">Al-Fatiha — Åbningen</p>
+    </header>
+
+    <section class="verses" id="verses" aria-label="Vers fra Al-Fatiha"></section>
+  </main>
+
+  <script>
+    const verses = [
+      { number: 1, arabic: "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ" },
+      { number: 2, arabic: "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ" },
+      { number: 3, arabic: "الرَّحْمَٰنِ الرَّحِيمِ" },
+      { number: 4, arabic: "مَالِكِ يَوْمِ الدِّينِ" },
+      { number: 5, arabic: "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ" },
+      { number: 6, arabic: "اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ" },
+      { number: 7, arabic: "صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ" },
+    ];
+
+    const versesContainer = document.getElementById("verses");
+
+    verses.forEach((verse) => {
+      const row = document.createElement("div");
+      row.className = "verse";
+
+      const num = document.createElement("span");
+      num.className = "verse-num";
+      num.textContent = verse.number;
+
+      const text = document.createElement("p");
+      text.className = "verse-text";
+      text.dir = "rtl";
+      text.lang = "ar";
+      text.textContent = verse.arabic;
+
+      row.appendChild(num);
+      row.appendChild(text);
+      versesContainer.appendChild(row);
+    });
+  </script>
+</body>
+</html>
