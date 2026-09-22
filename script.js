@@ -1,6 +1,7 @@
 const SURAH_LIST_URL = "https://api.alquran.cloud/v1/surah";
 const DANISH_EDITIONS_URL = "https://api.alquran.cloud/v1/edition/language/da";
 const FALLBACK_TRANSLATION = { identifier: "en.sahih", englishName: "Saheeh International (engelsk)" };
+const AUDIO_EDITION = "ar.alafasy";
 
 const select = document.getElementById("sura-select");
 const suraNameAr = document.getElementById("sura-name-ar");
@@ -8,8 +9,10 @@ const suraNameEn = document.getElementById("sura-name-en");
 const versesContainer = document.getElementById("verses");
 const statusEl = document.getElementById("status");
 const translationNoteEl = document.getElementById("translation-note");
+const player = document.getElementById("audio-player");
 
 let translationEdition = null;
+let currentPlayButton = null;
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
@@ -18,8 +21,48 @@ function setStatus(text, isError = false) {
 }
 
 function surahTextUrl(number) {
-  return `https://api.alquran.cloud/v1/surah/${number}/editions/quran-uthmani,${translationEdition.identifier}`;
+  return `https://api.alquran.cloud/v1/surah/${number}/editions/quran-uthmani,${translationEdition.identifier},${AUDIO_EDITION}`;
 }
+
+function setButtonPlaying(button, playing) {
+  button.querySelector(".icon-play").classList.toggle("is-hidden", playing);
+  button.querySelector(".icon-pause").classList.toggle("is-hidden", !playing);
+  button.classList.toggle("is-playing", playing);
+}
+
+function stopAudio() {
+  player.pause();
+  if (currentPlayButton) {
+    setButtonPlaying(currentPlayButton, false);
+    currentPlayButton = null;
+  }
+}
+
+function toggleAudio(button, url) {
+  if (currentPlayButton === button) {
+    stopAudio();
+    return;
+  }
+  stopAudio();
+  if (!url) {
+    setStatus("Ingen lyd tilgængelig for dette vers.", true);
+    return;
+  }
+  player.src = url;
+  player.play().catch(() => {
+    setStatus("Kunne ikke afspille lyden. Tjek din internetforbindelse.", true);
+  });
+  currentPlayButton = button;
+  setButtonPlaying(button, true);
+}
+
+player.addEventListener("ended", stopAudio);
+player.addEventListener("error", () => {
+  if (currentPlayButton) {
+    setStatus("Kunne ikke afspille lyden for dette vers.", true);
+  }
+  stopAudio();
+});
 
 async function resolveTranslationEdition() {
   try {
@@ -42,15 +85,32 @@ async function resolveTranslationEdition() {
   translationNoteEl.hidden = false;
 }
 
-function renderVerses(arabicAyahs, translationAyahs) {
+function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
   versesContainer.innerHTML = "";
   arabicAyahs.forEach((ayah, index) => {
     const row = document.createElement("div");
     row.className = "verse";
 
+    const side = document.createElement("div");
+    side.className = "verse-side";
+
     const num = document.createElement("span");
     num.className = "verse-num";
     num.textContent = ayah.numberInSurah;
+
+    const playButton = document.createElement("button");
+    playButton.className = "verse-play";
+    playButton.type = "button";
+    playButton.setAttribute("aria-label", `Afspil vers ${ayah.numberInSurah}`);
+    playButton.innerHTML = `
+      <svg class="icon-play" viewBox="0 0 24 24" width="14" height="14"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="icon-pause is-hidden" viewBox="0 0 24 24" width="14" height="14"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+    `;
+    const audioUrl = audioAyahs[index]?.audio;
+    playButton.addEventListener("click", () => toggleAudio(playButton, audioUrl));
+
+    side.appendChild(num);
+    side.appendChild(playButton);
 
     const content = document.createElement("div");
     content.className = "verse-content";
@@ -68,13 +128,14 @@ function renderVerses(arabicAyahs, translationAyahs) {
     content.appendChild(arabicText);
     content.appendChild(translationText);
 
-    row.appendChild(num);
+    row.appendChild(side);
     row.appendChild(content);
     versesContainer.appendChild(row);
   });
 }
 
 async function loadSurah(number) {
+  stopAudio();
   select.disabled = true;
   versesContainer.innerHTML = "";
   setStatus("Henter vers …");
@@ -83,12 +144,12 @@ async function loadSurah(number) {
     const response = await fetch(surahTextUrl(number));
     if (!response.ok) throw new Error(`Status ${response.status}`);
     const json = await response.json();
-    const [arabicEdition, translationEditionData] = json.data;
+    const [arabicEdition, translationEditionData, audioEditionData] = json.data;
 
     suraNameAr.textContent = arabicEdition.name;
     suraNameEn.textContent = `${arabicEdition.englishName} — ${arabicEdition.englishNameTranslation}`;
 
-    renderVerses(arabicEdition.ayahs, translationEditionData.ayahs);
+    renderVerses(arabicEdition.ayahs, translationEditionData.ayahs, audioEditionData.ayahs);
     setStatus("");
   } catch (err) {
     setStatus("Kunne ikke hente suraen. Tjek din internetforbindelse og prøv igen.", true);

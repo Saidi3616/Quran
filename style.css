@@ -121,8 +121,15 @@ body {
   padding: 20px;
 }
 
-.verse-num {
+.verse-side {
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.verse-num {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -134,6 +141,38 @@ body {
   font-family: "IBM Plex Mono", monospace;
   font-size: 13px;
   font-weight: 700;
+}
+
+.verse-play {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--emerald);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.verse-play:hover {
+  background: var(--emerald-soft);
+}
+
+.verse-play.is-playing {
+  background: var(--emerald);
+  border-color: var(--emerald);
+  color: var(--paper);
+}
+
+.verse-play svg {
+  fill: currentColor;
+}
+
+.verse-play svg.is-hidden {
+  display: none;
 }
 
 .verse-content {
