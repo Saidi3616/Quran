@@ -17,6 +17,11 @@ let verseQueue = [];
 let currentIndex = -1;
 const preloadedAudio = new Map();
 
+let displayMode = "both"; // "arabic" | "english" | "both"
+let currentArabicAyahs = [];
+let currentTranslationAyahs = [];
+let currentAudioAyahs = [];
+
 function preloadAudio(url) {
   if (!url || preloadedAudio.has(url)) return;
   const audio = new Audio();
@@ -168,6 +173,62 @@ function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
   });
 }
 
+function renderFlowing(ayahs, variant) {
+  versesContainer.innerHTML = "";
+  verseQueue = [];
+
+  const card = document.createElement("div");
+  card.className = "flow-card";
+
+  const para = document.createElement("p");
+  para.className = `verse-flow verse-flow-${variant}`;
+  if (variant === "arabic") {
+    para.dir = "rtl";
+    para.lang = "ar";
+  } else {
+    para.dir = "ltr";
+  }
+
+  ayahs.forEach((ayah) => {
+    para.appendChild(document.createTextNode(`${ayah.text} `));
+
+    const marker = document.createElement("span");
+    marker.className = "verse-flow-marker";
+    marker.textContent = ayah.numberInSurah;
+    para.appendChild(marker);
+    para.appendChild(document.createTextNode(" "));
+  });
+
+  card.appendChild(para);
+  versesContainer.appendChild(card);
+}
+
+function renderCurrentView() {
+  if (displayMode === "arabic") {
+    renderFlowing(currentArabicAyahs, "arabic");
+  } else if (displayMode === "english") {
+    renderFlowing(currentTranslationAyahs, "english");
+  } else {
+    renderVerses(currentArabicAyahs, currentTranslationAyahs, currentAudioAyahs);
+  }
+}
+
+function setMode(mode) {
+  displayMode = mode;
+  document.querySelectorAll(".mode-btn").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.mode === mode);
+  });
+}
+
+document.querySelectorAll(".mode-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (btn.dataset.mode === displayMode) return;
+    stopAudio();
+    setMode(btn.dataset.mode);
+    renderCurrentView();
+  });
+});
+
 async function loadSurah(number) {
   stopAudio();
   preloadedAudio.clear();
@@ -184,7 +245,11 @@ async function loadSurah(number) {
     suraNameAr.textContent = arabicEdition.name;
     suraNameEn.textContent = `${arabicEdition.englishName} — ${arabicEdition.englishNameTranslation}`;
 
-    renderVerses(arabicEdition.ayahs, translationEditionData.ayahs, audioEditionData.ayahs);
+    currentArabicAyahs = arabicEdition.ayahs;
+    currentTranslationAyahs = translationEditionData.ayahs;
+    currentAudioAyahs = audioEditionData.ayahs;
+
+    renderCurrentView();
     setStatus("");
   } catch (err) {
     setStatus("Kunne ikke hente suraen. Tjek din internetforbindelse og prøv igen.", true);
@@ -279,6 +344,7 @@ function renderSearchResults(matches, keyword) {
 
 async function goToVerse(surahNumber, numberInSurah) {
   clearSearchResults();
+  setMode("both");
   select.value = String(surahNumber);
   await loadSurah(surahNumber);
 
