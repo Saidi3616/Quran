@@ -1,11 +1,15 @@
 const SURAH_LIST_URL = "https://api.alquran.cloud/v1/surah";
-const surahTextUrl = (number) => `https://api.alquran.cloud/v1/surah/${number}`;
+const DANISH_EDITIONS_URL = "https://api.alquran.cloud/v1/edition/language/da";
+const FALLBACK_TRANSLATION = { identifier: "en.sahih", englishName: "Saheeh International (engelsk)" };
 
 const select = document.getElementById("sura-select");
 const suraNameAr = document.getElementById("sura-name-ar");
 const suraNameEn = document.getElementById("sura-name-en");
 const versesContainer = document.getElementById("verses");
 const statusEl = document.getElementById("status");
+const translationNoteEl = document.getElementById("translation-note");
+
+let translationEdition = null;
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
@@ -13,9 +17,34 @@ function setStatus(text, isError = false) {
   statusEl.hidden = !text;
 }
 
-function renderVerses(ayahs) {
+function surahTextUrl(number) {
+  return `https://api.alquran.cloud/v1/surah/${number}/editions/quran-uthmani,${translationEdition.identifier}`;
+}
+
+async function resolveTranslationEdition() {
+  try {
+    const response = await fetch(DANISH_EDITIONS_URL);
+    if (response.ok) {
+      const json = await response.json();
+      const translations = json.data.filter((edition) => edition.type === "translation");
+      if (translations.length > 0) {
+        translationEdition = translations[0];
+        translationNoteEl.hidden = true;
+        return;
+      }
+    }
+  } catch (err) {
+    // falder igennem til engelsk fallback herunder
+  }
+
+  translationEdition = FALLBACK_TRANSLATION;
+  translationNoteEl.textContent = `Dansk oversættelse ikke tilgængelig hos denne kilde — viser ${FALLBACK_TRANSLATION.englishName} i stedet.`;
+  translationNoteEl.hidden = false;
+}
+
+function renderVerses(arabicAyahs, translationAyahs) {
   versesContainer.innerHTML = "";
-  ayahs.forEach((ayah) => {
+  arabicAyahs.forEach((ayah, index) => {
     const row = document.createElement("div");
     row.className = "verse";
 
@@ -23,14 +52,24 @@ function renderVerses(ayahs) {
     num.className = "verse-num";
     num.textContent = ayah.numberInSurah;
 
-    const text = document.createElement("p");
-    text.className = "verse-text";
-    text.dir = "rtl";
-    text.lang = "ar";
-    text.textContent = ayah.text;
+    const content = document.createElement("div");
+    content.className = "verse-content";
+
+    const arabicText = document.createElement("p");
+    arabicText.className = "verse-text";
+    arabicText.dir = "rtl";
+    arabicText.lang = "ar";
+    arabicText.textContent = ayah.text;
+
+    const translationText = document.createElement("p");
+    translationText.className = "verse-translation";
+    translationText.textContent = translationAyahs[index]?.text ?? "";
+
+    content.appendChild(arabicText);
+    content.appendChild(translationText);
 
     row.appendChild(num);
-    row.appendChild(text);
+    row.appendChild(content);
     versesContainer.appendChild(row);
   });
 }
@@ -44,12 +83,12 @@ async function loadSurah(number) {
     const response = await fetch(surahTextUrl(number));
     if (!response.ok) throw new Error(`Status ${response.status}`);
     const json = await response.json();
-    const surah = json.data;
+    const [arabicEdition, translationEditionData] = json.data;
 
-    suraNameAr.textContent = surah.name;
-    suraNameEn.textContent = `${surah.englishName} — ${surah.englishNameTranslation}`;
+    suraNameAr.textContent = arabicEdition.name;
+    suraNameEn.textContent = `${arabicEdition.englishName} — ${arabicEdition.englishNameTranslation}`;
 
-    renderVerses(surah.ayahs);
+    renderVerses(arabicEdition.ayahs, translationEditionData.ayahs);
     setStatus("");
   } catch (err) {
     setStatus("Kunne ikke hente suraen. Tjek din internetforbindelse og prøv igen.", true);
@@ -85,4 +124,10 @@ select.addEventListener("change", () => {
   loadSurah(select.value);
 });
 
-loadSurahList();
+async function init() {
+  setStatus("Henter oversættelseskilde …");
+  await resolveTranslationEdition();
+  loadSurahList();
+}
+
+init();
