@@ -159,6 +159,25 @@ function editionLabel(edition) {
   return edition.language ? `${name} (${edition.language})` : name;
 }
 
+function populateSelectWithUniqueLabels(selectEl, editions) {
+  const counts = new Map();
+  editions.forEach((edition) => {
+    const label = editionLabel(edition);
+    counts.set(label, (counts.get(label) || 0) + 1);
+  });
+
+  selectEl.innerHTML = "";
+  editions.forEach((edition) => {
+    const label = editionLabel(edition);
+    const isDuplicate = counts.get(label) > 1;
+
+    const option = document.createElement("option");
+    option.value = edition.identifier;
+    option.textContent = isDuplicate ? `${label} — ${edition.identifier}` : label;
+    selectEl.appendChild(option);
+  });
+}
+
 async function loadEditionCatalog() {
   setStatus("Henter oversættelser og recitere …");
 
@@ -175,21 +194,8 @@ async function loadEditionCatalog() {
     .filter((edition) => edition.format === "audio")
     .sort((a, b) => editionLabel(a).localeCompare(editionLabel(b)));
 
-  translationSelect.innerHTML = "";
-  translationEditions.forEach((edition) => {
-    const option = document.createElement("option");
-    option.value = edition.identifier;
-    option.textContent = editionLabel(edition);
-    translationSelect.appendChild(option);
-  });
-
-  reciterSelect.innerHTML = "";
-  reciterEditions.forEach((edition) => {
-    const option = document.createElement("option");
-    option.value = edition.identifier;
-    option.textContent = editionLabel(edition);
-    reciterSelect.appendChild(option);
-  });
+  populateSelectWithUniqueLabels(translationSelect, translationEditions);
+  populateSelectWithUniqueLabels(reciterSelect, reciterEditions);
 
   const lastTranslation = safeGetItem(LAST_TRANSLATION_KEY);
   const danishTranslation = translationEditions.find((e) => e.language === "da");
