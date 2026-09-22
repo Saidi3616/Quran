@@ -251,7 +251,7 @@ async function loadEditionCatalog() {
 }
 
 function updateSearchPlaceholder() {
-  searchInput.placeholder = `Søg i oversættelsen (${editionLabel(selectedTranslation)}) …`;
+  searchInput.placeholder = "Søg på arabisk eller engelsk …";
 }
 
 function surahDividerLabel(ayah) {
@@ -840,6 +840,12 @@ function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+const ARABIC_CHAR_PATTERN = /[؀-ۿ]/;
+
+function detectSearchLanguage(text) {
+  return ARABIC_CHAR_PATTERN.test(text) ? "ar" : "en";
+}
+
 function highlightMatch(text, keyword) {
   const pattern = new RegExp(`(${escapeRegExp(keyword)})`, "ig");
   return text.replace(pattern, "<mark>$1</mark>");
@@ -910,36 +916,74 @@ async function goToVerse(surahNumber, numberInSurah) {
   }
 }
 
+let searchRequestId = 0;
+
 async function runSearch(keyword) {
-  setStatus(`Søger efter "${keyword}" …`);
+  const requestId = ++searchRequestId;
+  const language = detectSearchLanguage(keyword);
+  searchResultsEl.hidden = false;
+  searchResultsEl.innerHTML = `<p class="search-count">Søger …</p>`;
 
   try {
-    const url = `${API_BASE}/v1/search/${encodeURIComponent(keyword)}?language=${selectedTranslation.language}`;
+    const url = `${API_BASE}/v1/search/${encodeURIComponent(keyword)}?language=${language}`;
     const response = await fetch(url);
+
+    if (requestId !== searchRequestId) return; // et nyere søgeord blev indtastet i mellemtiden
 
     if (response.status === 404) {
       renderSearchResults([], keyword);
-      setStatus("");
       return;
     }
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
     const json = await response.json();
     renderSearchResults(json.data.matches, keyword);
-    setStatus("");
   } catch (err) {
-    setStatus("Kunne ikke gennemføre søgningen. Tjek din internetforbindelse og prøv igen.", true);
+    if (requestId !== searchRequestId) return;
+    searchResultsEl.innerHTML = "";
+    const error = document.createElement("p");
+    error.className = "search-empty";
+    error.textContent = "Kunne ikke gennemføre søgningen. Tjek din internetforbindelse.";
+    searchResultsEl.appendChild(error);
   }
 }
 
+let searchDebounceTimer = null;
+
+searchInput.addEventListener("input", () => {
+  const keyword = searchInput.value.trim();
+  clearTimeout(searchDebounceTimer);
+
+  if (keyword.length < 2) {
+    searchRequestId += 1; // annullér ethvert svar der stadig er undervejs
+    clearSearchResults();
+    return;
+  }
+
+  searchDebounceTimer = setTimeout(() => runSearch(keyword), 350);
+});
+
 searchForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  clearTimeout(searchDebounceTimer);
   const keyword = searchInput.value.trim();
   if (!keyword) {
     clearSearchResults();
     return;
   }
   runSearch(keyword);
+});
+
+document.addEventListener("click", (event) => {
+  if (!searchResultsEl.hidden && !searchForm.contains(event.target)) {
+    searchResultsEl.hidden = true;
+  }
+});
+
+searchInput.addEventListener("focus", () => {
+  if (searchResultsEl.innerHTML.trim() !== "") {
+    searchResultsEl.hidden = false;
+  }
 });
 
 async function init() {
