@@ -10,6 +10,7 @@ const versesContainer = document.getElementById("verses");
 const statusEl = document.getElementById("status");
 const translationNoteEl = document.getElementById("translation-note");
 const player = document.getElementById("audio-player");
+const debugAudioLink = document.getElementById("debug-audio-link");
 
 let translationEdition = null;
 let currentPlayButton = null;
@@ -49,6 +50,7 @@ function toggleAudio(button, url) {
     return;
   }
   player.src = url;
+  debugAudioLink.href = url;
   player.play().catch(() => {
     setStatus("Kunne ikke afspille lyden. Tjek din internetforbindelse.", true);
   });

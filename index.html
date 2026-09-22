@@ -25,7 +25,11 @@
     <section class="verses" id="verses" aria-label="Vers fra den valgte sura"></section>
   </main>
 
-  <audio id="audio-player"></audio>
+  <div class="debug-audio" id="debug-audio">
+    <p class="debug-audio-label">Midlertidig fejlfindings-lydbjælke (fjernes igen senere)</p>
+    <audio id="audio-player" controls></audio>
+    <a id="debug-audio-link" href="#" target="_blank" rel="noopener">Åbn lydfilen direkte i en ny fane</a>
+  </div>
 
   <script src="script.js"></script>
 </body>
