@@ -69,6 +69,42 @@ body {
   margin: 0;
 }
 
+.select-label {
+  display: block;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+
+.sura-select {
+  font-family: "Karla", sans-serif;
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  min-width: min(100%, 320px);
+}
+
+.status {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+.status.status-error {
+  color: #b3452f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .status.status-error {
+    color: #e08066;
+  }
+}
+
 .verses {
   display: flex;
   flex-direction: column;
