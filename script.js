@@ -586,3 +586,11 @@ async function init() {
 }
 
 init();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(() => {
+      // stille fejl - appen virker stadig, bare uden offline-understøttelse
+    });
+  });
+}
