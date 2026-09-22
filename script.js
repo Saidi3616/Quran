@@ -2,6 +2,45 @@ const SURAH_LIST_URL = "https://api.alquran.cloud/v1/surah";
 const DANISH_EDITIONS_URL = "https://api.alquran.cloud/v1/edition/language/da";
 const FALLBACK_TRANSLATION = { identifier: "en.sahih", englishName: "Saheeh International (engelsk)" };
 const AUDIO_EDITION = "ar.alafasy";
+const BOOKMARKS_KEY = "quran-app-bookmarks";
+const LAST_SURAH_KEY = "quran-app-last-surah";
+
+function safeGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (err) {
+    return null;
+  }
+}
+
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (err) {
+    // ignore - fx privat browsing hvor lagring er blokeret
+  }
+}
+
+function loadBookmarks() {
+  const raw = safeGetItem(BOOKMARKS_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function persistBookmarks() {
+  safeSetItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+}
+
+function getLastSurah() {
+  const raw = safeGetItem(LAST_SURAH_KEY);
+  const number = parseInt(raw, 10);
+  return number >= 1 && number <= 114 ? number : 1;
+}
 
 const select = document.getElementById("sura-select");
 const suraNameAr = document.getElementById("sura-name-ar");
@@ -22,6 +61,10 @@ let displayMode = "both"; // "arabic" | "english" | "both"
 let currentArabicAyahs = [];
 let currentTranslationAyahs = [];
 let currentAudioAyahs = [];
+let currentSurahNumber = null;
+let currentSurahEnglishName = "";
+
+let bookmarks = loadBookmarks();
 
 function preloadAudio(url) {
   if (!url || preloadedAudio.has(url)) return;
@@ -155,8 +198,31 @@ function renderVerses(arabicAyahs, translationAyahs, audioAyahs) {
     verseQueue.push({ button: playButton, url: audioUrl });
     playButton.addEventListener("click", () => toggleAudio(index));
 
+    const bookmarkButton = document.createElement("button");
+    bookmarkButton.className = "verse-bookmark";
+    bookmarkButton.type = "button";
+    bookmarkButton.setAttribute("aria-label", `Gem vers ${ayah.numberInSurah} som bogmærke`);
+    bookmarkButton.innerHTML = `
+      <svg class="icon-outline" viewBox="0 0 24 24" width="14" height="14"><path d="M6 2h12a1 1 0 0 1 1 1v19l-7-4-7 4V3a1 1 0 0 1 1-1z" fill="none"/></svg>
+      <svg class="icon-filled is-hidden" viewBox="0 0 24 24" width="14" height="14"><path d="M6 2h12a1 1 0 0 1 1 1v19l-7-4-7 4V3a1 1 0 0 1 1-1z"/></svg>
+    `;
+    setBookmarkButtonState(bookmarkButton, isBookmarked(currentSurahNumber, ayah.numberInSurah));
+    const snippetText = (translationAyahs[index]?.text ?? "").slice(0, 90);
+    bookmarkButton.addEventListener("click", () => {
+      toggleBookmark(
+        {
+          surah: currentSurahNumber,
+          surahName: currentSurahEnglishName,
+          ayah: ayah.numberInSurah,
+          snippet: snippetText,
+        },
+        bookmarkButton
+      );
+    });
+
     side.appendChild(num);
     side.appendChild(playButton);
+    side.appendChild(bookmarkButton);
 
     const content = document.createElement("div");
     content.className = "verse-content";
@@ -251,6 +317,104 @@ masterPlayButton.addEventListener("click", () => {
   }
 });
 
+const bookmarksToggleBtn = document.getElementById("bookmarks-toggle-btn");
+const bookmarksLabelEl = document.getElementById("bookmarks-label");
+const bookmarksPanelEl = document.getElementById("bookmarks-panel");
+
+function isBookmarked(surah, ayah) {
+  return bookmarks.some((b) => b.surah === surah && b.ayah === ayah);
+}
+
+function setBookmarkButtonState(button, active) {
+  button.classList.toggle("is-bookmarked", active);
+  button.querySelector(".icon-outline").classList.toggle("is-hidden", active);
+  button.querySelector(".icon-filled").classList.toggle("is-hidden", !active);
+}
+
+function toggleBookmark(entry, button) {
+  const idx = bookmarks.findIndex((b) => b.surah === entry.surah && b.ayah === entry.ayah);
+  const nowBookmarked = idx < 0;
+
+  if (nowBookmarked) {
+    bookmarks.push(entry);
+  } else {
+    bookmarks.splice(idx, 1);
+  }
+
+  persistBookmarks();
+  setBookmarkButtonState(button, nowBookmarked);
+  renderBookmarksPanel();
+}
+
+function renderBookmarksPanel() {
+  bookmarksLabelEl.textContent = `Bogmærker (${bookmarks.length})`;
+  if (bookmarksPanelEl.hidden) return;
+
+  bookmarksPanelEl.innerHTML = "";
+
+  if (bookmarks.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "search-empty";
+    empty.textContent = "Du har ingen bogmærker endnu. Tryk på bogmærke-ikonet ved et vers for at gemme det.";
+    bookmarksPanelEl.appendChild(empty);
+    return;
+  }
+
+  bookmarks.forEach((bookmark) => {
+    const item = document.createElement("div");
+    item.className = "search-result bookmark-item";
+
+    const openBtn = document.createElement("button");
+    openBtn.type = "button";
+    openBtn.className = "bookmark-open";
+
+    const meta = document.createElement("span");
+    meta.className = "search-result-meta";
+    meta.textContent = `${bookmark.surahName} ${bookmark.surah}:${bookmark.ayah}`;
+
+    const snippet = document.createElement("span");
+    snippet.className = "search-result-snippet";
+    snippet.textContent = bookmark.snippet;
+
+    openBtn.appendChild(meta);
+    openBtn.appendChild(snippet);
+    openBtn.addEventListener("click", () => {
+      bookmarksPanelEl.hidden = true;
+      goToVerse(bookmark.surah, bookmark.ayah);
+    });
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "bookmark-remove";
+    removeBtn.setAttribute("aria-label", "Fjern bogmærke");
+    removeBtn.textContent = "✕";
+    removeBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      bookmarks = bookmarks.filter((b) => !(b.surah === bookmark.surah && b.ayah === bookmark.ayah));
+      persistBookmarks();
+      renderBookmarksPanel();
+      if (currentSurahNumber === bookmark.surah) {
+        stopAudio();
+        renderCurrentView();
+      }
+    });
+
+    item.appendChild(openBtn);
+    item.appendChild(removeBtn);
+    bookmarksPanelEl.appendChild(item);
+  });
+}
+
+bookmarksToggleBtn.addEventListener("click", () => {
+  if (bookmarksPanelEl.hidden) {
+    clearSearchResults();
+    bookmarksPanelEl.hidden = false;
+    renderBookmarksPanel();
+  } else {
+    bookmarksPanelEl.hidden = true;
+  }
+});
+
 async function loadSurah(number) {
   stopAudio();
   preloadedAudio.clear();
@@ -270,6 +434,9 @@ async function loadSurah(number) {
     currentArabicAyahs = arabicEdition.ayahs;
     currentTranslationAyahs = translationEditionData.ayahs;
     currentAudioAyahs = audioEditionData.ayahs;
+    currentSurahNumber = arabicEdition.number;
+    currentSurahEnglishName = arabicEdition.englishName;
+    safeSetItem(LAST_SURAH_KEY, String(currentSurahNumber));
 
     renderCurrentView();
     setStatus("");
@@ -296,8 +463,9 @@ async function loadSurahList() {
     });
 
     setStatus("");
-    select.value = "1";
-    loadSurah(1);
+    const startSurah = getLastSurah();
+    select.value = String(startSurah);
+    loadSurah(startSurah);
   } catch (err) {
     setStatus("Kunne ikke hente listen over suraer. Tjek din internetforbindelse og genindlæs siden.", true);
   }
@@ -305,6 +473,7 @@ async function loadSurahList() {
 
 select.addEventListener("change", () => {
   clearSearchResults();
+  bookmarksPanelEl.hidden = true;
   loadSurah(select.value);
 });
 
@@ -402,6 +571,7 @@ async function runSearch(keyword) {
 
 searchForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  bookmarksPanelEl.hidden = true;
   const keyword = searchInput.value.trim();
   if (!keyword) {
     clearSearchResults();
@@ -411,6 +581,7 @@ searchForm.addEventListener("submit", (event) => {
 });
 
 async function init() {
+  bookmarksLabelEl.textContent = `Bogmærker (${bookmarks.length})`;
   setStatus("Henter oversættelseskilde …");
   await resolveTranslationEdition();
   loadSurahList();
