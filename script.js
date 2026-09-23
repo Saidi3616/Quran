@@ -1,6 +1,9 @@
 const API_BASE = "https://api.quranhub.com";
-const SURAH_LIST_URL = `${API_BASE}/v1/surah`;
-const EDITION_LIST_URL = `${API_BASE}/v1/edition`;
+// Trailing skråstreg med vilje: uden den svarer QuranHub med en omdirigering
+// der (fejlagtigt) peger på http:// i stedet for https://, hvilket browseren
+// blokerer som "mixed content". Med skråstregen undgår vi omdirigeringen.
+const SURAH_LIST_URL = `${API_BASE}/v1/surah/`;
+const EDITION_LIST_URL = `${API_BASE}/v1/edition/`;
 const BOOKMARKS_KEY = "quran-app-bookmarks";
 const LAST_SURAH_KEY = "quran-app-last-surah";
 const LAST_TRANSLATION_KEY = "quran-app-last-translation";
