@@ -944,7 +944,7 @@ async function runSearch(keyword) {
     }
 
     const json = await response.json();
-    renderSearchResults(json.data.matches, keyword);
+    renderSearchResults(json.data.ayahs, keyword);
   } catch (err) {
     if (requestId !== searchRequestId) return;
     console.error("Søgefejl", err);
