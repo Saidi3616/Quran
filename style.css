@@ -253,13 +253,6 @@ body {
   background: var(--emerald-soft);
 }
 
-.surah-row-page {
-  flex: 0 0 auto;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 13px;
-  color: var(--ink-soft);
-}
-
 .surah-row.is-last-read {
   background: var(--gold-soft);
 }

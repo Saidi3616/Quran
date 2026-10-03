@@ -722,17 +722,6 @@ function renderSurahList() {
     row.appendChild(number);
     row.appendChild(info);
 
-    // QuranHubs suraliste indeholder (indtil videre observeret) ikke et
-    // sidetal for hvor suraen starter i en trykt Koran. Viser det kun
-    // hvis API'et rent faktisk leverer et startPage-felt.
-    const page = surah.startPage ?? surah.page;
-    if (page != null) {
-      const pageEl = document.createElement("span");
-      pageEl.className = "surah-row-page";
-      pageEl.textContent = page;
-      row.appendChild(pageEl);
-    }
-
     row.addEventListener("click", () => openSurah(surah.number));
 
     surahListEl.appendChild(row);
@@ -845,9 +834,14 @@ function escapeRegExp(text) {
 
 const ARABIC_CHAR_PATTERN = /[؀-ۿ]/;
 
+function escapeHtml(text) {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+// Teksten fra API'et escapes før <mark> sættes ind, så den aldrig kan blive til rigtig HTML.
 function highlightMatch(text, keyword) {
-  const pattern = new RegExp(`(${escapeRegExp(keyword)})`, "ig");
-  return text.replace(pattern, "<mark>$1</mark>");
+  const pattern = new RegExp(`(${escapeRegExp(escapeHtml(keyword))})`, "ig");
+  return escapeHtml(text).replace(pattern, "<mark>$1</mark>");
 }
 
 function clearSearchResults() {

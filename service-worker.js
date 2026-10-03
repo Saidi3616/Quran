@@ -1,4 +1,4 @@
-const CACHE_NAME = "quran-app-v1";
+const CACHE_NAME = "quran-app-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -47,7 +47,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.hostname === "api.alquran.cloud") {
+  if (url.hostname === "api.quranhub.com") {
     // Koran-data: prøv nettet først, men gem en kopi så tidligere besøgte
     // suraer stadig kan åbnes offline
     event.respondWith(
